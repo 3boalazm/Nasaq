@@ -1,14 +1,6 @@
 import { parse, stringify } from "yaml";
-import {
-  ITEM_PRIORITIES,
-  ITEM_STATUSES,
-  SIZES,
-  TRACKS,
-  type ChangeRecord,
-  type Item,
-  type Phase,
-  type Project,
-} from "./types";
+import { ITEM_PRIORITIES, ITEM_STATUSES, SIZES, TRACKS } from "./types";
+import type { ChangeRecord, Item, Phase, Project, Size, Track } from "./types";
 
 export class ProjectYamlError extends Error {
   constructor(message: string) {
@@ -33,22 +25,53 @@ export function fromYaml(text: string): Project {
   }
 
   const name = requireNonEmptyString(raw, "name");
-  const track = parseEnum(raw["track"], "track", TRACKS);
-  const size = parseEnum(raw["size"], "size", SIZES);
+  const track = parseEnum<Track>(raw["track"], "track", TRACKS);
+  const size = parseEnum<Size>(raw["size"], "size", SIZES);
+  const startDate = parseRequiredDate(raw["startDate"], "startDate");
   const sizeHistory = parseArray(raw["sizeHistory"], "sizeHistory", parseChangeRecord);
-  const deadline = parseNullableString(raw["deadline"], "deadline");
+  const deadline = parseDate(raw["deadline"], "deadline");
   const approver = parseNullableString(raw["approver"], "approver");
-  const outOfScope = parseArray(raw["outOfScope"], "outOfScope", (v, p) => {
-    if (typeof v !== "string") throw new ProjectYamlError(`${p} must be a string`);
-    return v;
-  });
+  const outOfScope = parseStringList(raw["outOfScope"], "outOfScope");
   const phases = parseArray(raw["phases"], "phases", parsePhase);
 
-  return { name, track, size, sizeHistory, deadline, approver, outOfScope, phases };
+  return { name, track, size, startDate, sizeHistory, deadline, approver, outOfScope, phases };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** True only for YYYY-MM-DD that names a real calendar day. */
+export function isRealIsoDate(s: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(0);
+  dt.setUTCFullYear(y, mo - 1, d);
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
+}
+
+function parseRequiredDate(value: unknown, path: string): string {
+  if (value === undefined || value === null) {
+    throw new ProjectYamlError(`${path} is required (YYYY-MM-DD)`);
+  }
+  return checkIsoDate(value, path);
+}
+
+function parseDate(value: unknown, path: string): string | null {
+  if (value === undefined || value === null) return null;
+  return checkIsoDate(value, path);
+}
+
+function checkIsoDate(value: unknown, path: string): string {
+  if (typeof value !== "string" || !isRealIsoDate(value)) {
+    throw new ProjectYamlError(
+      `${path} must be a real date in YYYY-MM-DD format (got ${JSON.stringify(value)})`,
+    );
+  }
+  return value;
 }
 
 function requireNonEmptyString(obj: Record<string, unknown>, field: string): string {
@@ -80,6 +103,14 @@ function parseNullableString(value: unknown, field: string): string | null {
   return value;
 }
 
+function parseStringList(value: unknown, field: string): string[] {
+  return parseArray(value, field, (v, path) => {
+    if (typeof v !== "string") throw new ProjectYamlError(`${path} must be a string`);
+    return v;
+  });
+}
+
+/** Missing or null lists parse as empty. */
 function parseArray<T>(
   value: unknown,
   field: string,
@@ -92,16 +123,18 @@ function parseArray<T>(
 
 function parseChangeRecord(v: unknown, path: string): ChangeRecord {
   if (!isRecord(v)) throw new ProjectYamlError(`${path} must be a mapping`);
-  const date = v["date"];
-  if (typeof date !== "string") throw new ProjectYamlError(`${path}.date must be a string`);
+  const date = parseRequiredDate(v["date"], `${path}.date`);
   const fromSize =
     v["fromSize"] === undefined || v["fromSize"] === null
       ? null
-      : parseEnum(v["fromSize"], `${path}.fromSize`, SIZES);
-  const toSize = parseEnum(v["toSize"], `${path}.toSize`, SIZES);
+      : parseEnum<Size>(v["fromSize"], `${path}.fromSize`, SIZES);
+  const toSize = parseEnum<Size>(v["toSize"], `${path}.toSize`, SIZES);
   const reason = v["reason"];
   if (typeof reason !== "string") throw new ProjectYamlError(`${path}.reason must be a string`);
-  return { date, fromSize, toSize, reason };
+  const approvedBy = parseNullableString(v["approvedBy"], `${path}.approvedBy`);
+  const itemsCut = parseStringList(v["itemsCut"], `${path}.itemsCut`);
+  const itemsAdded = parseStringList(v["itemsAdded"], `${path}.itemsAdded`);
+  return { date, fromSize, toSize, reason, approvedBy, itemsCut, itemsAdded };
 }
 
 function parsePhase(v: unknown, path: string): Phase {
