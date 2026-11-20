@@ -1,4 +1,12 @@
-import { createProject, suggestFromIntake, todayIso, validateAnswers, type IntakeAnswers } from "../core/intake";
+import {
+  createProject,
+  fieldErrors,
+  INTAKE_FIELDS,
+  suggestFromIntake,
+  todayIso,
+  type IntakeAnswers,
+  type IntakeField,
+} from "../core/intake";
 import { zipFileName } from "../core/files";
 import { buildZip } from "../core/zip";
 import type { AnswerKey } from "../core/size";
@@ -29,6 +37,18 @@ const UNKNOWNS_OPTIONS: ReadonlyArray<readonly [string, string]> = [
   ["research_needed", "Research needed before planning"],
 ];
 const SIZE_OPTIONS: readonly Size[] = ["S", "M", "L"];
+
+/** The form control for each intake field. */
+const CONTROL_ID: Record<IntakeField, string> = {
+  name: "f-name",
+  track: "f-track",
+  startDate: "f-start",
+  deadline: "f-deadline",
+  deliverables: "f-deliverables",
+  approvers: "f-approvers",
+  risk: "f-risk",
+  unknowns: "f-unknowns",
+};
 
 function input(id: string, type: string, extra: Partial<HTMLInputElement> = {}): HTMLInputElement {
   return el("input", { id, type, ...extra });
@@ -70,8 +90,13 @@ export function readAnswers(root: ParentNode): IntakeAnswers {
 /** Builds the intake page inside `root`. Returns the form element. */
 export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTMLFormElement {
   let sizeOverridden = false;
+  /** Fields the user has left (blur or change) since the page loaded. */
+  const touched = new Set<IntakeField>();
+  /** Set after the first Download click: every field's error is shown from then on. */
+  let revealAll = false;
 
-  const errorsEl = el("ul", { className: "errors", id: "f-errors" });
+  // Errors for a field are shown only once it was touched or Download was clicked.
+  const errorsEl = el("ul", { className: "errors", id: "f-errors", role: "alert" });
   const suggestionEl = el("p", { id: "f-suggestion", className: "suggestion", role: "status" });
   const durationEl = el("p", { id: "f-duration", className: "hint" });
   const deadlineHintEl = el("p", { id: "f-deadline-hint", className: "hint" });
@@ -80,7 +105,7 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     { id: "f-size" },
     SIZE_OPTIONS.map((s) => el("option", { value: s, textContent: s })),
   );
-  const downloadBtn = el("button", { id: "f-download", type: "button", textContent: "Download ZIP", disabled: true });
+  const downloadBtn = el("button", { id: "f-download", type: "button", textContent: "Download ZIP" });
 
   const form = el("form", { id: "intake", noValidate: true, className: "intake" }, [
     field("f-name", "Project name", input("f-name", "text", { required: true })),
@@ -110,24 +135,47 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
 
   root.replaceChildren(form);
 
+  // One error line per field, placed under its control and hidden until it should show.
+  const errorLines = new Map<IntakeField, HTMLElement>();
+  for (const key of INTAKE_FIELDS) {
+    const control = form.querySelector<HTMLElement>(`#${CONTROL_ID[key]}`);
+    const box = control?.closest(".field");
+    if (!control || !box) throw new Error(`form field ${key} is missing`);
+    const line = el("p", { className: "field-error", id: `err-${CONTROL_ID[key]}`, hidden: true });
+    box.append(line);
+    control.setAttribute("aria-describedby", line.id);
+    errorLines.set(key, line);
+  }
+
   const showErrors = (messages: string[]): void => {
     errorsEl.replaceChildren(...messages.map((m) => el("li", { textContent: m })));
   };
 
+  /** Shows the error of each field that is touched (or all, after a Download click). */
+  const showFieldErrors = (errors: Partial<Record<IntakeField, string>>): void => {
+    for (const key of INTAKE_FIELDS) {
+      const message = (revealAll || touched.has(key)) && errors[key] ? errors[key] : "";
+      const line = errorLines.get(key)!;
+      line.textContent = message;
+      line.hidden = message === "";
+      const control = form.querySelector<HTMLElement>(`#${CONTROL_ID[key]}`)!;
+      control.setAttribute("aria-invalid", message === "" ? "false" : "true");
+    }
+  };
+
   const refresh = (): void => {
     const a = readAnswers(form);
-    const errors = validateAnswers(a);
-    showErrors(errors);
+    const errors = fieldErrors(a);
+    showFieldErrors(errors);
     // Both dates are YYYY-MM-DD, so string comparison is date comparison.
     deadlineHintEl.textContent =
       a.startDate && a.deadline && a.deadline < a.startDate
         ? "The deadline is before the start date. Duration counts as 1 day."
         : "";
 
-    if (errors.length > 0) {
+    if (Object.keys(errors).length > 0) {
       suggestionEl.textContent = "Fill in the fields above to see a suggested size.";
       durationEl.textContent = "";
-      downloadBtn.disabled = true;
       return;
     }
 
@@ -137,12 +185,19 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
       .join(", ")}.`;
     durationEl.textContent = `Duration: ${s.duration} day${s.duration === 1 ? "" : "s"}, counting start and deadline.`;
     if (!sizeOverridden) sizeSelect.value = s.size;
+  };
 
-    downloadBtn.disabled = false;
+  /** Marks the field the event came from as touched, then refreshes. */
+  const touch = (event: Event): void => {
+    const target = event.target as HTMLElement | null;
+    const key = INTAKE_FIELDS.find((k) => CONTROL_ID[k] === target?.id);
+    if (key) touched.add(key);
+    refresh();
   };
 
   form.addEventListener("input", refresh);
-  form.addEventListener("change", refresh);
+  form.addEventListener("change", touch);
+  form.addEventListener("focusout", touch);
   sizeSelect.addEventListener("change", () => {
     sizeOverridden = true;
     refresh();
@@ -150,7 +205,15 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
 
   downloadBtn.addEventListener("click", async () => {
     const a = readAnswers(form);
-    if (validateAnswers(a).length > 0) return;
+    const errors = fieldErrors(a);
+    const first = INTAKE_FIELDS.find((k) => errors[k]);
+    if (first) {
+      // Reveal every error, then put the cursor in the first invalid field.
+      revealAll = true;
+      refresh();
+      form.querySelector<HTMLElement>(`#${CONTROL_ID[first]}`)?.focus();
+      return;
+    }
     try {
       const project = createProject(a, sizeSelect.value as Size);
       const blob = await buildZip(project);
