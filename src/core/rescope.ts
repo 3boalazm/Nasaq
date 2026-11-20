@@ -90,7 +90,7 @@ export function rescope(
 /**
  * Template files the user does not have yet: filePlan(track, to) minus filePlan(track, from),
  * without the entry file and project.yml (those are always included on their own).
- * S→M: PLAN.md. S→L, M→L: the four L files. L→M: PROJECT.md, PLAN.md. L→S: PROJECT.md. M→S: none.
+ * S→M: PLAN.md. S→L, M→L: the L files of the track. L→M: PROJECT.md, PLAN.md. L→S: PROJECT.md. M→S: none.
  */
 export function newFilesFor(track: Track, from: Size, to: Size): string[] {
   const have = new Set(filePlan(track, from));

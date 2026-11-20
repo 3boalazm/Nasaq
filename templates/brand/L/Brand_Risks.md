@@ -13,6 +13,8 @@ Screening only: name and logo screening is not legal clearance. Counsel confirms
 | Medium | Weakens the system; visible in some uses | Fixed, or Deferred with a dated decision |
 | Low | Polish or consistency | Fixed when convenient |
 
+Project risks (things that may happen) are scored: probability 1–3 × impact 1–3. Score 6–9: act now and tell the approver. 3–4: plan the mitigation. 1–2: watch.
+
 ## 1 Status legend
 
 Open, In progress, Fixed, Deferred (needs a dated decision and a reason).
@@ -55,7 +57,22 @@ Open, In progress, Fixed, Deferred (needs a dated decision and a reason).
 | BR-BASE-11 | One source of truth for tokens | not run | — |
 | BR-BASE-12 | Handover complete (files, licences, guide, usage session) | not run | — |
 
-## 5 Case format
+## 5 Project risk register
+
+Starting list. Score each one at the start, review at every gate, add your own.
+
+| ID | Risk | P | I | Score | Owner | Mitigation | Next review |
+|---|---|---|---|---|---|---|---|
+| PR-01 | Feedback arrives late or from several voices | _ | _ | _ | _ | One decision owner; reply window (Playbook 0.1) | _ |
+| PR-02 | Scope grows without a change request | _ | _ | _ | _ | Change requests (Playbook 0.2) | _ |
+| PR-03 | Name or mark conflicts with an existing one | _ | _ | _ | _ | Screening in Discovery; counsel before the Identity gate | _ |
+| PR-04 | Approvers disagree on a route | _ | _ | _ | _ | Route scoring (Playbook 3.2); strategy approved first | _ |
+| PR-05 | Font or imagery licence does not cover a use | _ | _ | _ | _ | Licence before use; BR-BASE-01 and 02 | _ |
+| PR-06 | Printed colour does not match | _ | _ | _ | _ | One physical proof per medium, early | _ |
+| PR-07 | AI-made asset with unclear ownership reaches a master file | _ | _ | _ | _ | AI rules (Playbook 0.3); AI log | _ |
+| PR-08 | Deadline moves closer | _ | _ | _ | _ | Rescope in Nasaq; cut nice items first | _ |
+
+## 6 Case format
 
 ```
 ### <CODE>-<n> <title>
@@ -63,12 +80,14 @@ Open, In progress, Fixed, Deferred (needs a dated decision and a reason).
 - Status: Open | In progress | Fixed | Deferred
 - Phase: <id>
 - Evidence: VERIFIED | CLIENT-REPORTED | UNVERIFIED | ASSUMPTION — source, proof id, or test id
+- Owner: _
 - Finding: _
-- Fix, or dated decision if Deferred: _
+- Fix or mitigation, or dated decision if Deferred: _
+- If it still happens: _
 - Re-check: <test id>
 ```
 
-## 6 Findings summary
+## 7 Findings summary
 
 | Category | Open | Fixed | Deferred |
 |---|---|---|---|

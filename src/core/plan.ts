@@ -16,11 +16,11 @@ const SIZE_FILES: Record<Size, readonly string[]> = {
 
 const L_FILES: Record<Track, readonly string[]> = {
   dev: ["Implementation.md", "Security_issues.md", "Test_scenarios.md", "Handoff.md"],
-  brand: ["Brand_Roadmap.md", "Brand_Risks.md", "Application_Tests.md", "Handoff.md"],
+  brand: ["Brand_Roadmap.md", "Brand_Risks.md", "Application_Tests.md", "Handoff.md", "Brand_Playbook.md"],
   uiux: ["UX_Roadmap.md", "UX_Risks.md", "UX_Tests.md", "Handoff.md"],
 };
 
-/** Names of the four L files by role, for a track. */
+/** Names of the four role files of size L, for a track. Brand adds Brand_Playbook.md after them. */
 export function roleFiles(track: Track): { roadmap: string; risk: string; test: string; handoff: string } {
   const [roadmap, risk, test, handoff] = L_FILES[track];
   return { roadmap: roadmap!, risk: risk!, test: test!, handoff: handoff! };

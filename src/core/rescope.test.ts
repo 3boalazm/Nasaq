@@ -22,7 +22,7 @@ async function zipText(blob: Blob, name: string): Promise<string> {
 
 /** Expected ZIP file names for a direction, written out per track (no derived lists). */
 const L_FILES: Record<Track, string[]> = {
-  brand: ["Application_Tests.md", "Brand_Risks.md", "Brand_Roadmap.md", "Handoff.md"],
+  brand: ["Application_Tests.md", "Brand_Playbook.md", "Brand_Risks.md", "Brand_Roadmap.md", "Handoff.md"],
   uiux: ["UX_Risks.md", "UX_Roadmap.md", "UX_Tests.md", "Handoff.md"],
   dev: ["Handoff.md", "Implementation.md", "Security_issues.md", "Test_scenarios.md"],
 };
@@ -132,7 +132,7 @@ describe("M3.2 rescope ZIP: file list for all six directions, all tracks", () =>
     expect(newFilesFor("brand", "L", "S")).toEqual(["PROJECT.md"]);
     expect(newFilesFor("brand", "M", "S")).toEqual([]);
     // plan order, not alphabetical
-    const brandL = ["Brand_Roadmap.md", "Brand_Risks.md", "Application_Tests.md", "Handoff.md"];
+    const brandL = ["Brand_Roadmap.md", "Brand_Risks.md", "Application_Tests.md", "Handoff.md", "Brand_Playbook.md"];
     expect(newFilesFor("brand", "S", "L")).toEqual(brandL);
     expect(newFilesFor("brand", "M", "L")).toEqual(brandL);
   });
