@@ -4,30 +4,117 @@ Nasaq is a small static web app that sets up and maintains a project folder for 
 
 No backend, no accounts, no database, no analytics, no network calls at runtime.
 
+## Use it
+
+1. `npm ci`
+2. `npm run build`
+3. `npm run preview`, then open the address it prints (usually `http://localhost:4173/`).
+
+`npm run build` also runs the dist check (`postbuild`): it fails if the built page contains any `http://` or `https://` text outside license comments.
+
 ## Stack
 
 - Vite + TypeScript (strict), plain CSS, no UI framework
-- Runtime dependency: `yaml`
-- Dev: `typescript`, `vite`, `vitest`
+- Runtime dependencies: `yaml`, `jszip`
+- Dev: `typescript`, `vite`, `vitest`, `jsdom`
 - Core logic in `src/core/` (pure functions, no DOM); UI in `src/ui/`
 - Size limits only in `src/core/thresholds.ts`
-- Templates (Markdown with `{{placeholders}}`) under `templates/{track}/{size}/`
+- Templates (Markdown with `{{placeholders}}`) under `templates/`
 
 ## Commands
 
 ```sh
-npm install
-npm run dev        # local dev server
-npm run typecheck  # tsc --noEmit
-npm test           # vitest run
-npm run build      # typecheck + vite build
+npm ci
+npm run dev          # local dev server
+npm run typecheck    # tsc --noEmit
+npm test             # unit tests (src/)
+npm run build        # typecheck, vite build, then the dist URL check
+npm run test:dist    # the dist URL check on its own (needs dist/ from a build)
+npm run preview      # serve dist/ locally
 ```
+
+## Editing templates
+
+Every generated file comes from a Markdown template in `templates/{track}/{size}/`. No project text is written in code.
+
+| What you want to change | Where |
+| --- | --- |
+| Text of a size S or M file | `templates/{track}/{size}/PROJECT.md` or `PLAN.md` |
+| Text of an L file | `templates/{track}/L/` (four files per track) |
+| The entry file (`AGENTS.md` for dev, `README.md` for brand and UI/UX) | `templates/_shared/entry.md` |
+| Phases and items for a track and size | `templates/{track}/{size}/phases.yml` (phase `name` and `items` list) |
+| The rescope note and the per-move instructions | `templates/_shared/RESCOPE_NOTE.md`, `templates/_shared/rescope/*.md` |
+
+Steps:
+
+1. Edit the Markdown or `phases.yml`. Do not add real client names or project data; use placeholders.
+2. Run `npm test`. The tests render every track and size and fail on a leftover `{{`, a `TODO`, or the word "lorem".
+3. Run `npm run build`.
+
+To add a new file to a size: add the template under `templates/{track}/{size}/`, add its name to `filePlan` in `src/core/plan.ts`, then run `npm test`. A file that is in `filePlan` but has no template fails the tests.
+
+### Placeholders
+
+A placeholder is `{{name}}`. Using a name the project does not provide makes the build of that file throw, so a typo shows up in the tests, not in a user's ZIP.
+
+Available in project files:
+
+| Placeholder | Value |
+| --- | --- |
+| `name` | Project name (as entered; it is text only, never a file name) |
+| `track` | `brand`, `uiux` or `dev` |
+| `size` | `S`, `M` or `L` |
+| `readFirst` | The other files the entry file tells the reader to read |
+| `startDate`, `deadline` | Dates (`YYYY-MM-DD`); `deadline` is `not set` when empty |
+| `approver` | Approver name, or `not set` |
+| `outOfScope` | Out-of-scope list as Markdown bullets, or `- None` |
+| `phaseChecklist`, `phaseRegistry`, `phasePlan`, `phaseNameRows` | Generated phase tables and lists |
+| `changeLogRows` | Rows of the size history table |
+| `sizeDate`, `sizeReason` | Date and reason of the first size decision |
+
+Available in `RESCOPE_NOTE.md` and the rescope instruction files, in addition to the above:
+
+| Placeholder | Value |
+| --- | --- |
+| `changeDate`, `fromSize`, `toSize`, `direction` | The change record and whether the move goes up or down |
+| `reason`, `approvedBy` | Reason for the change and who approved it |
+| `itemsCut`, `itemsAdded` | Items cut or added in this change (`none` if empty) |
+| `fileList` | The files in the ZIP and what to do with each |
+| `roadmapFile`, `riskFile`, `testFile` | The names of the track's L files by role |
+| `cutNotice`, `instructions` | Generated text for the cut and the move |
+
+## Changing the size thresholds
+
+All limits are in one file: `src/core/thresholds.ts`.
+
+- `DURATION_DAYS_BANDS`: days from start to deadline, counting both days (S 1 to 7, M 8 to 28, L 29 and up).
+- `DELIVERABLES_BANDS`: number of deliverables (S 1 to 5, M 6 to 15, L 16 and up).
+- `APPROVERS_BANDS`: number of approvers (S 1, M 2, L 3 and up).
+- `RISK_SIZES`, `UNKNOWNS_SIZES`: the size each answer gives.
+- `MAX_PROJECT_YAML_BYTES`: the largest `project.yml` the page reads (1 MB).
+
+Change a number there, then run `npm test`. The tests read these values from the file, and `thresholds.test.ts` fails if the S, M and L bands leave a gap or overlap. Do not copy a limit into another file.
+
+## Known limits
+
+Browser checks that have not been run. There is no browser in the build sandbox, so none of these were done.
+
+- Opening the page in a browser and switching between the New project and Existing project tabs.
+- Choosing a real `project.yml` with the file picker. The upload path is covered by jsdom tests, not by a real picker.
+- How the must-cut warning, the required "Approved by" field, and the status card look on screen.
+- Clicking "Download ZIP" and "Download rescope ZIP" in a browser and opening the files. ZIP contents are covered by tests.
+- Layout at 375 px and 1280 px width, including the history table on a phone.
+- Keyboard use of the tabs and the form, with a visible focus ring, in a real browser. Focus order and labels are covered by jsdom tests.
+- Screen reader behaviour. Not tested.
+- Running the built page itself (`dist/`) in a browser. The ZIPs for all nine track and size combinations were generated by the same core code the page calls, not by clicking the built page.
+
+Other limits:
+
+- The dist check allows two URL strings that bundled dependencies keep in code (error hints). They are listed in `scripts/dist-scan.test.ts`. See `HANDOFF.md`.
+- The page is in English only. Arabic is supported in project names, which are text, but the UI and templates are not translated.
+- No storage: a project is only in the `project.yml` the user keeps.
 
 ## Docs
 
 - `docs/SPEC.md`: product spec. `docs/SPRINTS.md`: sprint plan (S0 to S4).
-- `HANDOFF.md`: current sprint state, checks, and open questions.
-
-## Status
-
-Sprint S0 (scaffold and core engine). See `HANDOFF.md`.
+- `HANDOFF.md`: current sprint state, checks with results, and open questions.

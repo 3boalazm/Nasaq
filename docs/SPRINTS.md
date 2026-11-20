@@ -2,6 +2,18 @@
 
 Five sprints, S0 to S4. Give Arena **one sprint per session**: paste the Preamble, then that sprint's block. Attach `Project_Flow_System_Research_and_Spec_2026-11-20.md` (called "the spec" below) to every session. Review the result before starting the next sprint.
 
+## Record (as built)
+
+| Sprint | Session branch | Pull request | Merged into `main` |
+| --- | --- | --- | --- |
+| S0 | `arena/b062b4d0-nasaq` | #1 | `5573fb2` |
+| S1 | `arena/1120c134-nasaq` | #2 | `ad4b875` (merged on user request) |
+| S2 | `arena/3c99cdef-nasaq` | #3 | `b78bb50` (merged on user request) |
+| S3 | `arena/8b6adae4-nasaq` | #4 | `6b612e7` (merged on user request) |
+| S4 | `arena/566c2423-nasaq` | open, for review | not merged |
+
+Rule 5 of the Preamble says not to merge. S1 to S3 were merged only when the owner asked.
+
 ---
 
 ## Preamble (paste at the top of every session)
@@ -93,23 +105,23 @@ src/ui/form.ts, src/ui/main.ts, src/ui/style.css   # [New]
 
 **Goal:** all 9 track × size folders generate.
 
-**Attach to this session:** project docs 26 (code templates) and 27 (brand templates). They are the base for the L templates.
+**Source:** project docs 26 and 27 were not available when S2 was built and are not in the repo. The L templates are written from spec §5.2 and the milestones below.
 
 **Out of scope:** rescope, status view, new form fields.
 
 **Files**
 ```
 templates/{brand,uiux,dev}/M/{PROJECT.md,PLAN.md}   # [New]
-templates/dev/L/*      # [New] from doc 26, with every Aboalazm OS specific replaced by a placeholder or removed
-templates/brand/L/*    # [New] from doc 27 (already generic)
+templates/dev/L/*      # [New] written from spec §5.2; no repo-specific text
+templates/brand/L/*    # [New] written from spec §5.2 (NEW and RETROFIT modes)
 templates/uiux/L/*     # [New] same four-file shape, content from spec §5.2 column L
 src/ui/form.ts         # [Modified] enable M and L
 ```
 
 **Milestones**
 - [ ] **M2.1** M templates. `PROJECT.md` as in S plus a pointer to the plan. `PLAN.md`: phases from the M column of spec §5, each with deliverables, one acceptance check, one approval gate, and must or nice per item; then per-phase checks. accept: render test for 3 tracks, no leftover `{{`.
-- [ ] **M2.2** `dev/L` from doc 26. Remove all repo-specific content (paths, commit ids, routes, invariants I1 to I10, the S1 worked example, gotchas). Keep the structure, status legend, evidence tags, spec lint, sprint template, case formats, rules of engagement, baseline tables as empty-but-headed sections. accept: `grep -ril "aboalazm\|payload\|neon\|redesign-v2" templates/dev/L` prints nothing.
-- [ ] **M2.3** `brand/L` from doc 27, both modes kept (NEW and RETROFIT). accept: render test passes.
+- [ ] **M2.2** `dev/L`, written from spec §5.2 with no repo-specific content. accept: `grep -ril "aboalazm\|payload\|neon\|redesign-v2" templates/dev/L` prints nothing.
+- [ ] **M2.3** `brand/L`, written from spec §5.2, both modes kept (NEW and RETROFIT). accept: render test passes.
 - [ ] **M2.4** `uiux/L`: `UX_Roadmap.md` (phases Discover, Define, Design, Validate, Handoff), `UX_Risks.md` (categories: accessibility, RTL and bilingual, responsive, content, consistency with tokens, handoff completeness), `UX_Tests.md` (usability task cases, contrast, keyboard, 375 and 1280 widths, RTL), `Handoff.md`. accept: render test passes.
 - [ ] **M2.5** Guard test: for all 9 combinations the ZIP file list equals `filePlan`, and no generated file contains `{{` or the words "TODO" or "lorem". accept: test passes.
 
@@ -134,11 +146,11 @@ templates/_shared/RESCOPE_NOTE.md     # [New]
 ```
 
 **Milestones**
-- [ ] **M3.1** `rescope` returns a new project with the size changed and one entry appended to `sizeHistory`: date, from, to, reason, items cut, items added, approved by. It refuses a change to the same size and an empty reason. accept: tests for L→M, M→S, S→M, M→L, and the two refusals.
-- [ ] **M3.2** The rescope ZIP contains: the updated `project.yml`; `RESCOPE_NOTE.md` with the change record and the exact file instructions from spec §6 for that direction (going down: which files to freeze with the banner text and what to carry over; going up: which files are new and the "do not back-fill, write a one-paragraph baseline" rule); and **only the files that are new** at the new size. It never includes a file the user already has. accept: a test checks the file list for each of the four directions.
+- [ ] **M3.1** `rescope` returns a new project with the size changed and one entry appended to `sizeHistory`: date, from, to, reason, items cut, items added, approved by. `approvedBy` is required (a blank value is refused). It refuses a change to the same size and an empty reason. accept: tests for L→M, M→S, S→M, M→L, and the refusals.
+- [ ] **M3.2** The rescope ZIP contains: `project.yml`, `RESCOPE_NOTE.md` (the change record, a file table, and the instructions for the move), the regenerated entry file (`README.md` or `AGENTS.md`), and every file in `filePlan(track, new size)` that is not in `filePlan(track, old size)`. Results: S→M adds `PLAN.md`; S→L and M→L add the four L files; L→M adds `PROJECT.md` and `PLAN.md`; L→S adds `PROJECT.md`; M→S adds nothing. For L→M and L→S the note tells the user to carry open items from the frozen risk and test files into the Baseline checklist of the new `PROJECT.md`. It never includes a file the user already has, except `project.yml` and the entry file. accept: a test checks the exact file list for all six directions and all three tracks.
 - [ ] **M3.3** Must/nice step: before confirming a move down, the page lists open items from `project.yml` and the user marks which nice items are cut. Cut items are written to the change record and set to status `cut`. accept: test on a sample project.
 - [ ] **M3.4** `status` shows size, size history, current phase, open must items, open nice items, deadline and days left. accept: test with a fixed "today" date.
-- [ ] **M3.5** `scopeAlert`: for an S project, warn when it has more than 5 deliverables or its deadline is more than 7 days after its start; for an M project, more than 15 deliverables or more than 28 days. The alert suggests the next size and never changes it by itself. accept: boundary tests (5 and 6, 15 and 16).
+- [ ] **M3.5** `scopeAlert`: for an S project, warn when it has more than 5 deliverables or its duration is more than 7 days, counting both the start and the deadline day; for an M project, more than 15 deliverables or more than 28 days. The alert suggests the next size and never changes it by itself. accept: boundary tests (5 and 6, 15 and 16 deliverables; the duration limits).
 
 **Done when:** tests, typecheck and build pass, and a manual run of generate → upload → rescope down → upload → rescope up is described in HANDOFF.md.
 
@@ -151,10 +163,10 @@ templates/_shared/RESCOPE_NOTE.md     # [New]
 **Out of scope:** new features, Arabic UI, integrations.
 
 **Milestones**
-- [ ] **M4.1** Input safety: project name becomes a safe slug for file names; a malformed or oversized (over 1 MB) `project.yml` shows a clear error and never crashes; user text is inserted as text, never as HTML. accept: tests for a name with `../`, slashes and Arabic letters; a broken YAML test; a search of `src/ui` for `innerHTML` returns nothing or each use is justified in HANDOFF.md.
-- [ ] **M4.2** No runtime network: no fonts, scripts or requests from other origins. accept: the built `dist/` contains no `http://` or `https://` URLs other than in comments or license text; verified by a grep recorded in HANDOFF.md.
-- [ ] **M4.3** Accessibility and layout: every input has a label, keyboard order follows the form, visible focus, text contrast at least 4.5:1, usable at 375 px width. accept: manual checklist with results in HANDOFF.md.
-- [ ] **M4.4** Template editing guide in README: how to change a template, the placeholder list, how to change the size thresholds (one constants file). accept: thresholds live in one file and tests read from it.
+- [ ] **M4.1** Input safety: project name becomes a safe slug for file names (Arabic-only names fall back to `project`); a malformed, non-mapping, unknown-field or over-1 MB `project.yml` shows a clear error and never crashes; user text is inserted as text, never as HTML. accept: tests for names with `../`, slashes, Arabic and HTML; broken YAML tests; `src/ui` has no `innerHTML` in code (checked by grep, recorded in HANDOFF.md).
+- [ ] **M4.2** No runtime network: no fonts, scripts or requests from other origins. accept: `scripts/dist-scan.test.ts` scans `dist/` after every `npm run build` (the `postbuild` script) and fails on any `http://` or `https://` text outside block comments, except two URLs that bundled dependencies keep in code, each matched exactly once and listed in the test.
+- [ ] **M4.3** Accessibility and layout: every input has a label, keyboard order follows the form, visible focus, text contrast at least 4.5:1, usable at 375 px width. accept: jsdom tests check labels, tab order, and contrast of the CSS colours (`src/ui/safety.test.ts`, `src/ui/contrast.test.ts`). The browser checklist (keyboard, focus ring, 375 px layout) was not run; see README "Known limits".
+- [ ] **M4.4** Template editing guide in README: how to change a template, the placeholder list, how to change the size thresholds (one constants file). accept: thresholds live in one file and tests read from it (`src/core/thresholds.test.ts`).
 - [ ] **M4.5** Release check: fresh clone, `npm ci`, `npm test`, `npm run typecheck`, `npm run build`; generate all 9 ZIPs from the built page. accept: each command and its result listed in HANDOFF.md. Leave the pull request open for the owner. Do not deploy.
 
 **Done when:** the owner can review one pull request with all checks listed and their results.

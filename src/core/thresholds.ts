@@ -46,3 +46,6 @@ export const UNKNOWNS_SIZES: Record<UnknownsLevel, Size> = {
   few: "M",
   research_needed: "L",
 };
+
+/** Largest project.yml the page will read. Bigger files are refused before parsing. */
+export const MAX_PROJECT_YAML_BYTES = 1024 * 1024;

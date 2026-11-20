@@ -23,6 +23,7 @@ export function fromYaml(text: string): Project {
   if (!isRecord(raw)) {
     throw new ProjectYamlError("project.yml must contain a mapping at the top level");
   }
+  rejectUnknownKeys(raw, TOP_KEYS, "top level");
 
   const name = requireNonEmptyString(raw, "name");
   const track = parseEnum<Track>(raw["track"], "track", TRACKS);
@@ -35,6 +36,32 @@ export function fromYaml(text: string): Project {
   const phases = parseArray(raw["phases"], "phases", parsePhase);
 
   return { name, track, size, startDate, sizeHistory, deadline, approver, outOfScope, phases };
+}
+
+const TOP_KEYS = [
+  "name",
+  "track",
+  "size",
+  "startDate",
+  "sizeHistory",
+  "deadline",
+  "approver",
+  "outOfScope",
+  "phases",
+] as const;
+const CHANGE_KEYS = ["date", "fromSize", "toSize", "reason", "approvedBy", "itemsCut", "itemsAdded"] as const;
+const PHASE_KEYS = ["id", "name", "items"] as const;
+const ITEM_KEYS = ["id", "title", "priority", "status"] as const;
+
+/** Unknown fields are an error, so a typo is never silently dropped. */
+function rejectUnknownKeys(obj: Record<string, unknown>, allowed: readonly string[], where: string): void {
+  for (const key of Object.keys(obj)) {
+    if (!allowed.includes(key)) {
+      throw new ProjectYamlError(
+        `unknown field ${JSON.stringify(key)} in project.yml (${where}). Remove it or fix the spelling.`,
+      );
+    }
+  }
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -123,6 +150,7 @@ function parseArray<T>(
 
 function parseChangeRecord(v: unknown, path: string): ChangeRecord {
   if (!isRecord(v)) throw new ProjectYamlError(`${path} must be a mapping`);
+  rejectUnknownKeys(v, CHANGE_KEYS, path);
   const date = parseRequiredDate(v["date"], `${path}.date`);
   const fromSize =
     v["fromSize"] === undefined || v["fromSize"] === null
@@ -139,6 +167,7 @@ function parseChangeRecord(v: unknown, path: string): ChangeRecord {
 
 function parsePhase(v: unknown, path: string): Phase {
   if (!isRecord(v)) throw new ProjectYamlError(`${path} must be a mapping`);
+  rejectUnknownKeys(v, PHASE_KEYS, path);
   const id = v["id"];
   const name = v["name"];
   if (typeof id !== "string") throw new ProjectYamlError(`${path}.id must be a string`);
@@ -149,6 +178,7 @@ function parsePhase(v: unknown, path: string): Phase {
 
 function parseItem(v: unknown, path: string): Item {
   if (!isRecord(v)) throw new ProjectYamlError(`${path} must be a mapping`);
+  rejectUnknownKeys(v, ITEM_KEYS, path);
   const id = v["id"];
   const title = v["title"];
   if (typeof id !== "string") throw new ProjectYamlError(`${path}.id must be a string`);

@@ -100,7 +100,7 @@ button:focus-visible {
 }
 
 .actions button:disabled {
-  background: #9a9aa0;
+  background: #6e6e75;
   cursor: not-allowed;
 }
 
