@@ -130,6 +130,8 @@ export const ar: Record<MessageKey, string> = {
   "dash.priority.must": "أساسي",
   "dash.priority.nice": "ثانوي",
   "dash.phaseMeta": "{done} منجز · {open} مفتوح · {cut} مقطوع",
+  "dash.scopeLimits": "حدود الحجم {size}: حتى {deliverables} من المخرجات و{days} يومًا.",
+  "dash.scopeNoLimit": "الحجم L ليس له حد أعلى.",
   "dash.delivNote": "غير مقطوعة. {min} أو أكثر هو حجم L، بلا حد أعلى.",
   "dash.delivLimit": "غير مقطوعة. الحد للحجم {size}: {limit}.",
   "dash.delivOver": "تجاوز الحد بـ {n}.",

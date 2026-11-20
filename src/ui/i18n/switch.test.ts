@@ -112,7 +112,7 @@ describe("the dashboard renders in Arabic from a sample project.yml", () => {
     document.body.append(box);
     mountStatus(box, sampleProject("S", "dev"), "2026-11-01");
     const headings = Array.from(box.querySelectorAll(".card-head")).map((h) => h.textContent);
-    expect(headings).toEqual(["البنود المفتوحة", "الحجم", "المخرجات", "النطاق", "المراحل", "سجل الحجم"]);
+    expect(headings).toEqual(["النطاق", "البنود المفتوحة", "المراحل", "الحجم", "المخرجات", "سجل الحجم"]);
     expect(box.querySelector(".pill")?.textContent).toBe("الحجم S");
     expect(box.querySelector(".pill + .pill")?.textContent).toBe("تطوير");
     expect(box.querySelector("#scope-alert")?.textContent).toContain("تنبيه النطاق");

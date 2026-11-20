@@ -1,4 +1,5 @@
 import { buildRescopeZip } from "../core/zip";
+import { content, isolate } from "./i18n/content";
 import { directionOf, rescope } from "../core/rescope";
 import { projectSlug } from "../core/files";
 import { todayIso } from "../core/intake";
@@ -84,8 +85,8 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
     const text = el("span", {});
     bind(() => {
       text.textContent = t("rescope.cutLabel", {
-        title: it.title,
-        phase: it.phase,
+        title: isolate(content(it.title)),
+        phase: isolate(content(it.phase)),
         priority: t(`dash.priority.${it.priority}`),
       });
     });
