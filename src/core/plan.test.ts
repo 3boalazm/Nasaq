@@ -25,7 +25,7 @@ describe("filePlan", () => {
         "Brand_Roadmap.md",
         "Brand_Risks.md",
         "Application_Tests.md",
-        "Handoff.md",
+        "Handoff.md", "Brand_Playbook.md",
       ],
     },
     uiux: {

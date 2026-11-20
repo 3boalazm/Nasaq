@@ -1,5 +1,6 @@
 import { ENTRY_FILE, PROJECT_YAML, filePlan } from "./plan";
-import type { Phase, Project } from "./types";
+import { APPROVERS_BANDS, DELIVERABLES_BANDS, DURATION_DAYS_BANDS } from "./thresholds";
+import type { Phase, Project, Size } from "./types";
 
 const PLACEHOLDER = /\{\{\s*([A-Za-z][A-Za-z0-9_]*)\s*\}\}/g;
 
@@ -29,6 +30,24 @@ function registryRows(phases: Phase[], withProof: boolean): string {
 /** Rows for the per-phase risk and test registries: one row per project phase. */
 function phaseNameRows(phases: Phase[]): string {
   return phases.map((ph) => `| ${ph.name} | 0 | not run | pending |`).join("\n");
+}
+
+/** Rows for the timeline table: one row per phase, dates and effort left to fill. */
+function phaseTimelineRows(phases: Phase[]): string {
+  return phases.map((ph) => `| ${ph.name} | _ | _ | _ | _ | 0 |`).join("\n");
+}
+
+/** One sentence saying what makes a project this size, built from the thresholds. */
+export function sizeRule(size: Size): string {
+  const byHand = "The size can also be set by hand.";
+  if (size === "L") {
+    return `L when any one is true: ${DURATION_DAYS_BANDS.L.min}+ days, ${DELIVERABLES_BANDS.L.min}+ deliverables, ${APPROVERS_BANDS.L.min}+ approvers, hard to undo, or research needed. ${byHand}`;
+  }
+  const d = DURATION_DAYS_BANDS[size];
+  const n = DELIVERABLES_BANDS[size];
+  const a = APPROVERS_BANDS[size];
+  const approvers = a.min === a.max ? `${a.min}` : `${a.min}–${a.max}`;
+  return `${size} when nothing points higher: ${d.min}–${d.max} days, ${n.min}–${n.max} deliverables, ${approvers} approver(s). ${byHand}`;
 }
 
 /** One block per phase: approval gate, item table, checks. */
@@ -76,6 +95,8 @@ export function buildContext(project: Project): Record<string, string> {
     phaseRegistry: registryRows(project.phases, project.track !== "dev"),
     phasePlan: planBlocks(project.phases),
     phaseNameRows: phaseNameRows(project.phases),
+    phaseTimelineRows: phaseTimelineRows(project.phases),
+    sizeRule: sizeRule(project.size),
     changeLogRows: project.sizeHistory
       .map(
         (c) =>

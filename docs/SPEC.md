@@ -90,6 +90,8 @@ Order from the sources: discovery, then strategy, then identity design, then gui
 
 Fixed at any size: AR/EN parity, licence before use, versioned file names, client approval before anything leaves.
 
+**Size L adds a fifth file, `Brand_Playbook.md`** (added 2026-11-20 after a review of the generated L files). It holds what the four role files only named: the feedback, change-request and AI rules; the research questions for Discovery; the required Strategy outputs; the Identity core production spec; the application catalogue with sector starting sets; and the delivery spec. Each output has an acceptance check. It is read one section per phase. Sizes S and M are unchanged.
+
 ### 5.2 UI/UX
 Base model: Double Diamond (discover, define, develop, deliver), which pairs diverging and converging in two rounds. `[SOURCE]`
 
