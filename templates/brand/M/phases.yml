@@ -1,0 +1,21 @@
+# Phase checklist for size M, from spec section 5.1 (M column). Items added with + are listed as their own item.
+phases:
+  - name: Discovery
+    items:
+      - "Questionnaire + 5 peers"
+      - "Stakeholder call, peer audit"
+  - name: Strategy
+    items:
+      - "One-page strategy"
+  - name: Identity core
+    items:
+      - "2 routes, then refine one"
+  - name: System
+    items:
+      - "Tokens, grid, 10–20 page guide"
+  - name: Applications
+    items:
+      - "3–6 real applications, tested on screen"
+  - name: Handover
+    items:
+      - "Files, templates, guide"

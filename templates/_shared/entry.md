@@ -1,6 +1,6 @@
 # {{name}}
 
-This folder was set up by Nasaq. Size: {{size}}. Read `PROJECT.md` for the brief, phases, checklists and handoff.
+This folder was set up by Nasaq. Size: {{size}}. Read {{readFirst}} for the brief, phases, checklists and handoff.
 
 ## Always-on rules
 
@@ -13,4 +13,4 @@ This folder was set up by Nasaq. Size: {{size}}. Read `PROJECT.md` for the brief
 
 ## Start prompt
 
-Read PROJECT.md fully. Do one phase. Update Handoff. Stop.
+Read {{readFirst}} fully. Do one phase. Update Handoff. Stop.

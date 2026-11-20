@@ -1,5 +1,5 @@
 import { suggestSize, type SizeSuggestion } from "./size";
-import { sPhaseDefs } from "./templates";
+import { phaseDefs } from "./templates";
 import { isRealIsoDate, ProjectYamlError } from "./projectYaml";
 import { TRACKS, type ChangeRecord, type Item, type Phase, type Project, type Size, type Track } from "./types";
 import { RISK_LEVELS, UNKNOWNS_LEVELS, type RiskLevel, type UnknownsLevel } from "./thresholds";
@@ -79,7 +79,7 @@ export function suggestFromIntake(a: IntakeAnswers): IntakeSuggestion {
 }
 
 /**
- * Builds the project for size S. Phases come from the S column of spec section 5.
+ * Builds the project at any size. Phases come from the matching column of spec section 5.
  * Every item starts as must / todo. The initial size is recorded in sizeHistory.
  */
 export function createProject(a: IntakeAnswers, size: Size, today: string = todayIso()): Project {
@@ -91,9 +91,8 @@ export function createProject(a: IntakeAnswers, size: Size, today: string = toda
   const track = a.track as Track;
   if (!isRealIsoDate(a.startDate)) throw new ProjectYamlError("startDate must be a real date (YYYY-MM-DD)");
   if (!isRealIsoDate(a.deadline)) throw new ProjectYamlError("deadline must be a real date (YYYY-MM-DD)");
-  if (size !== "S") throw new Error(`templates for size ${size} arrive in S2`);
 
-  const phases: Phase[] = sPhaseDefs(track).map((def, i) => {
+  const phases: Phase[] = phaseDefs(track, size).map((def, i) => {
     const phaseId = `p${i + 1}`;
     const items: Item[] = def.items.map((title, j) => ({
       id: `${phaseId}-${j + 1}`,

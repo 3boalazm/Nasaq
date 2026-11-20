@@ -1,0 +1,18 @@
+# Phase checklist for size M, from spec section 5.3 (M column). Items added with + are listed as their own item.
+phases:
+  - name: Spec
+    items:
+      - "PRD-lite + data model + API list"
+  - name: Setup
+    items:
+      - "Branch, preview deploy, env list"
+  - name: Build
+    items:
+      - "Phases of up to 5 milestones, one per session"
+  - name: Verify
+    items:
+      - "Typecheck, existing tests, manual check"
+      - "New tests, security baseline, preview check"
+  - name: Release
+    items:
+      - "Your approval, merge, smoke test"

@@ -101,6 +101,8 @@ Base model: Double Diamond (discover, define, develop, deliver), which pairs div
 | Validate | Self-check: contrast, mobile, RTL | One round of usability testing on a prototype | Testing rounds, accessibility audit |
 | Handoff | Annotated screens | Specs, tokens, states, assets | Specs, token file, component docs, edge cases |
 
+Fixed at any size: text contrast AA (4.5:1), works at 375 px and 1280 px, Arabic/RTL parity when the product is bilingual, keyboard reachable with visible focus, every screen has empty, loading and error states.
+
 AI builders (Lovable, Bolt, Replit, Rocket) fit the Design and Validate phases as fast clickable prototypes. Treat their code as a prototype unless it passes the Dev track checks.
 
 ### 5.3 Development (front and back)

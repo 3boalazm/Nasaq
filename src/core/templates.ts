@@ -1,44 +1,47 @@
 import { parse } from "yaml";
-import type { Track } from "./types";
+import type { Size, Track } from "./types";
 
-// Template files are imported as raw text. All project text lives in templates/.
-import brandS from "../../templates/brand/S/PROJECT.md?raw";
-import uiuxS from "../../templates/uiux/S/PROJECT.md?raw";
-import devS from "../../templates/dev/S/PROJECT.md?raw";
-import brandPhasesS from "../../templates/brand/S/phases.yml?raw";
-import uiuxPhasesS from "../../templates/uiux/S/phases.yml?raw";
-import devPhasesS from "../../templates/dev/S/phases.yml?raw";
-import entry from "../../templates/_shared/entry.md?raw";
+// Every file under templates/ is imported as raw text at build time.
+// Keys look like "../../templates/dev/L/Implementation.md".
+const RAW = import.meta.glob("../../templates/**/*.{md,yml}", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
 export interface PhaseDef {
   name: string;
   items: string[];
 }
 
-const S_PROJECT: Record<Track, string> = { brand: brandS, uiux: uiuxS, dev: devS };
-const S_PHASES: Record<Track, string> = { brand: brandPhasesS, uiux: uiuxPhasesS, dev: devPhasesS };
-
-/** Entry file body, shared by all tracks (AGENTS.md for dev, README.md otherwise). */
-export const ENTRY_TEMPLATE: string = entry;
-
-/** PROJECT.md template for size S. */
-export function sProjectTemplate(track: Track): string {
-  return S_PROJECT[track];
+function rawTemplate(path: string): string {
+  const text = RAW[`../../templates/${path}`];
+  if (text === undefined) throw new Error(`missing template: templates/${path}`);
+  return text;
 }
 
-/** Phase checklist for size S from the S column of spec section 5. */
-export function sPhaseDefs(track: Track): PhaseDef[] {
-  const raw: unknown = parse(S_PHASES[track]);
-  if (typeof raw !== "object" || raw === null || !Array.isArray((raw as { phases?: unknown }).phases)) {
-    throw new Error(`phases.yml for ${track} must have a 'phases' list`);
+/** Shared entry file body (README.md or AGENTS.md). */
+export const ENTRY_TEMPLATE: string = rawTemplate("_shared/entry.md");
+
+/** Template for one generated file of a track and size, by its output name. */
+export function fileTemplate(track: Track, size: Size, fileName: string): string {
+  return rawTemplate(`${track}/${size}/${fileName}`);
+}
+
+/** Phase checklist for a track and size, from the matching column of spec section 5. */
+export function phaseDefs(track: Track, size: Size): PhaseDef[] {
+  const raw: unknown = parse(rawTemplate(`${track}/${size}/phases.yml`));
+  const list = (raw as { phases?: unknown } | null)?.phases;
+  if (!Array.isArray(list)) {
+    throw new Error(`phases.yml for ${track}/${size} must have a 'phases' list`);
   }
-  return ((raw as { phases: unknown[] }).phases).map((p, i) => {
+  return list.map((p, i) => {
     const phase = p as { name?: unknown; items?: unknown };
     if (typeof phase.name !== "string" || !Array.isArray(phase.items)) {
-      throw new Error(`phases.yml for ${track}: phase ${i + 1} needs a name and items`);
+      throw new Error(`phases.yml for ${track}/${size}: phase ${i + 1} needs a name and items`);
     }
     const items = phase.items.map((it) => {
-      if (typeof it !== "string") throw new Error(`phases.yml for ${track}: items must be strings`);
+      if (typeof it !== "string") throw new Error(`phases.yml for ${track}/${size}: items must be strings`);
       return it;
     });
     return { name: phase.name, items };

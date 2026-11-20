@@ -1,0 +1,17 @@
+# Phase checklist for size M, from spec section 5.2 (M column).
+phases:
+  - name: Discover
+    items:
+      - "Competitor review, audit of the current UI, analytics if available"
+  - name: Define
+    items:
+      - "Flows, sitemap, requirements list"
+  - name: Design
+    items:
+      - "Wireframes → UI → small component kit and tokens"
+  - name: Validate
+    items:
+      - "One round of usability testing on a prototype"
+  - name: Handoff
+    items:
+      - "Specs, tokens, states, assets"

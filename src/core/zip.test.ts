@@ -46,7 +46,11 @@ describe("buildZip", () => {
     expect(zipFileName(project)).toBe("acme-relaunch-2026.zip");
   });
 
-  it("refuses M and L", async () => {
-    await expect(buildZip({ ...createProject(base, "S", "2026-11-20"), size: "M" })).rejects.toThrow(/S2/);
+  it("M and L build a ZIP with their own file lists", async () => {
+    for (const size of ["M", "L"] as const) {
+      const project = createProject(base, size, "2026-11-20");
+      const zip = await JSZip.loadAsync(await (await buildZip(project)).arrayBuffer());
+      expect(Object.keys(zip.files).filter((n) => !zip.files[n]?.dir).sort()).toEqual([...filePlan("brand", size)].sort());
+    }
   });
 });

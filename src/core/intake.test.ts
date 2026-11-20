@@ -63,8 +63,10 @@ describe("createProject", () => {
     expect(p.approver).toBeNull();
     expect(p.outOfScope).toEqual(["a", "b"]);
   });
-  it("throws for M and L", () => {
-    expect(() => createProject(ok, "M", "2026-11-20")).toThrow(/S2/);
+  it("builds M and L phases from their own spec columns", () => {
+    expect(createProject(ok, "M", "2026-11-20").size).toBe("M");
+    const l = createProject({ ...ok, track: "dev" }, "L", "2026-11-20");
+    expect(l.phases.find((p) => p.name === "Setup")?.items.length).toBe(2);
   });
 });
 
