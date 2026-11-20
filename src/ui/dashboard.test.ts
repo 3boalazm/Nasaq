@@ -152,3 +152,86 @@ describe("existing project dashboard renders its cards from a project.yml", () =
     expect(root.querySelector("b")).toBeNull();
   });
 });
+
+/** A project whose first phase has the given item statuses (one item per status), other phases as sampled. */
+function phaseWith(statuses: Array<"todo" | "done" | "cut">): Project {
+  const base = sampleProject("S");
+  const items = statuses.map((status, i) => ({ id: `t${i}`, title: `Item ${i}`, priority: "must" as const, status }));
+  return { ...base, phases: [{ ...base.phases[0]!, items }, ...base.phases.slice(1)] };
+}
+
+/** The first phase's bar: its segments with their flex-grow (item counts) and their label text. */
+function firstBar(root: HTMLElement, p: Project): { done: string | null; open: string | null; cut: string | null; label: string } {
+  mountStatus(root, p, TODAY);
+  const row = card("card-phases").querySelector<HTMLElement>(".phase-row")!;
+  const grow = (cls: string): string | null => row.querySelector<HTMLElement>(`.part.${cls}`)?.style.flexGrow ?? null;
+  return {
+    done: grow("done"),
+    open: grow("open"),
+    cut: grow("cut"),
+    label: row.querySelector(".meta")?.textContent ?? "",
+  };
+}
+
+describe("phase bars: green only for done items", () => {
+  let root: HTMLElement;
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    root = document.createElement("div");
+    document.body.append(root);
+  });
+
+  it("0 done, 2 open, 0 cut: no done segment (no green), two open segments' worth of grey", () => {
+    const bar = firstBar(root, phaseWith(["todo", "todo"]));
+    expect(bar.done).toBeNull();
+    expect(bar.open).toBe("2");
+    expect(bar.cut).toBeNull();
+    expect(bar.label).toBe("0 done · 2 open · 0 cut");
+  });
+
+  it("some done: a dark green segment for the done count, grey for the rest", () => {
+    const bar = firstBar(root, phaseWith(["done", "todo", "todo"]));
+    expect(bar.done).toBe("1");
+    expect(bar.open).toBe("2");
+    expect(bar.cut).toBeNull();
+    expect(bar.label).toBe("1 done · 2 open · 0 cut");
+  });
+
+  it("all done: one dark green segment covering the phase, no grey", () => {
+    const bar = firstBar(root, phaseWith(["done", "done", "done"]));
+    expect(bar.done).toBe("3");
+    expect(bar.open).toBeNull();
+    expect(bar.cut).toBeNull();
+    expect(bar.label).toBe("3 done · 0 open · 0 cut");
+  });
+
+  it("one cut: a striped segment sized by the cut count, shown apart from open items", () => {
+    const bar = firstBar(root, phaseWith(["cut", "todo"]));
+    expect(bar.done).toBeNull();
+    expect(bar.open).toBe("1");
+    expect(bar.cut).toBe("1");
+    expect(bar.label).toBe("0 done · 1 open · 1 cut");
+  });
+
+  it("the segment sizes are the item counts, so the bar is proportional", () => {
+    const bar = firstBar(root, phaseWith(["done", "cut", "cut", "todo"]));
+    expect([bar.done, bar.open, bar.cut]).toEqual(["1", "1", "2"]);
+  });
+
+  it("the Open items bar counts done items against the items not cut, across all phases", () => {
+    // The first phase has 2 done, 1 open, 1 cut. The other phases come from the sample and have no done items.
+    const p = phaseWith(["done", "done", "todo", "cut"]);
+    mountStatus(root, p, TODAY);
+    const notCut = p.phases.reduce((n, ph) => n + ph.items.filter((i) => i.status !== "cut").length, 0);
+    const done = p.phases.reduce((n, ph) => n + ph.items.filter((i) => i.status === "done").length, 0);
+    const bar = card("card-open").querySelector("progress") as HTMLProgressElement;
+    expect(bar.value).toBe(done);
+    expect(bar.max).toBe(notCut);
+    expect(card("card-open").textContent).toContain(`${done} of ${notCut} done`);
+  });
+
+  it("the Size history card is full width, so it never sits alone in a row", () => {
+    mountStatus(root, phaseWith(["todo"]), TODAY);
+    expect(card("card-history").classList.contains("card-wide")).toBe(true);
+  });
+});

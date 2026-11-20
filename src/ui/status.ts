@@ -183,7 +183,8 @@ function phasesCard(project: Project): HTMLElement {
 }
 
 function historyCard(s: ProjectStatus): HTMLElement {
-  const { node, body } = card("card-history", "Size history");
+  // Full width, so it never sits alone in a row of the grid.
+  const { node, body } = card("card-history", "Size history", ["card-wide"]);
   if (s.historyRows.length === 0) {
     body.append(el("p", { className: "hint", textContent: "No size changes yet." }));
     return node;

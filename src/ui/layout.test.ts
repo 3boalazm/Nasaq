@@ -119,3 +119,19 @@ describe("S5 input styling in the source stylesheet", () => {
     );
   });
 });
+
+describe("phase bar and grid rules in the source stylesheet", () => {
+  it("done is dark green, open is neutral grey, and cut is striped", () => {
+    expect(ruleBody(".part.done")).toMatch(/background:\s*var\(--accent\)/);
+    expect(ruleBody(".part.open")).toMatch(/background:\s*var\(--line-soft\)/);
+    expect(ruleBody(".part.cut")).toMatch(/repeating-linear-gradient/);
+  });
+
+  it("the open segment is not light green (no accent-light on phase segments)", () => {
+    expect(ruleBody(".part.open")).not.toMatch(/accent-light/);
+  });
+
+  it("the dashboard grid stretches cards to the same height in a row", () => {
+    expect(ruleBody(".bento")).toMatch(/align-items:\s*stretch/);
+  });
+});
