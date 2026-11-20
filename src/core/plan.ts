@@ -20,6 +20,12 @@ const L_FILES: Record<Track, readonly string[]> = {
   uiux: ["UX_Roadmap.md", "UX_Risks.md", "UX_Tests.md", "Handoff.md"],
 };
 
+/** Names of the four L files by role, for a track. */
+export function roleFiles(track: Track): { roadmap: string; risk: string; test: string; handoff: string } {
+  const [roadmap, risk, test, handoff] = L_FILES[track];
+  return { roadmap: roadmap!, risk: risk!, test: test!, handoff: handoff! };
+}
+
 /**
  * Returns the files to generate for a track and size, in a stable order:
  * entry file, project.yml, then the size-specific files.

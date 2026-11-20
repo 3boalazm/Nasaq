@@ -91,8 +91,8 @@ export function buildContext(project: Project): Record<string, string> {
  * Fills {{key}} placeholders from the project.
  * Throws if the template uses a key the project does not provide.
  */
-export function render(template: string, project: Project): string {
-  const ctx = buildContext(project);
+export function render(template: string, project: Project, extra: Record<string, string> = {}): string {
+  const ctx = { ...buildContext(project), ...extra };
   return template.replace(PLACEHOLDER, (_match, key: string) => {
     if (!Object.hasOwn(ctx, key)) {
       throw new Error(`template uses placeholder {{${key}}}, which the project does not have`);

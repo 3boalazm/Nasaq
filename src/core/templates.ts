@@ -23,6 +23,12 @@ function rawTemplate(path: string): string {
 /** Shared entry file body (README.md or AGENTS.md). */
 export const ENTRY_TEMPLATE: string = rawTemplate("_shared/entry.md");
 
+/** Rescope note template and the per-direction instruction snippets (spec section 6). */
+export const RESCOPE_NOTE_TEMPLATE: string = rawTemplate("_shared/RESCOPE_NOTE.md");
+export function rescopeSnippet(name: "down-L-M" | "down-M-S" | "up"): string {
+  return rawTemplate(`_shared/rescope/${name}.md`);
+}
+
 /** Template for one generated file of a track and size, by its output name. */
 export function fileTemplate(track: Track, size: Size, fileName: string): string {
   return rawTemplate(`${track}/${size}/${fileName}`);
