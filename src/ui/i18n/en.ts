@@ -128,6 +128,8 @@ export const en = {
   "dash.priority.must": "Must",
   "dash.priority.nice": "Nice",
   "dash.phaseMeta": "{done} done · {open} open · {cut} cut",
+  "dash.scopeLimits": "Limits for size {size}: up to {deliverables} deliverables and {days} days.",
+  "dash.scopeNoLimit": "Size L has no upper limit.",
   "dash.delivNote": "Not cut. {min} or more is size L, with no upper limit.",
   "dash.delivLimit": "Not cut. Limit for {size}: {limit}.",
   "dash.delivOver": "{n} over the limit.",

@@ -951,6 +951,10 @@ button:disabled {
   .card-wide {
     grid-column: 1 / -1;
   }
+
+  .card-tall {
+    grid-row: span 2;
+  }
 }
 
 @media (min-width: 600px) {

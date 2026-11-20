@@ -5,11 +5,12 @@ import { el } from "./dom";
 import { sizeName, trackName } from "./labels";
 import { bind, ltr, pluralText, t, translate } from "./i18n";
 import type { MessageKey } from "./i18n/en";
+import { content, isolate } from "./i18n/content";
 
 export type Line = [label: string, value: string];
 
 function itemText(it: OpenItem): string {
-  return `${it.title} (${it.phase}, ${it.priority})`;
+  return `${isolate(content(it.title))} (${isolate(content(it.phase))}, ${it.priority})`;
 }
 
 /** Label and value pairs for the status summary. Pure, so it can be tested without the DOM. */
@@ -27,7 +28,7 @@ export function statusLines(s: ProjectStatus): Line[] {
     [t("dash.line.start"), s.startDate],
     [t("dash.line.deadline"), s.deadline ?? t("dash.notSet")],
     [t("dash.line.daysLeft"), days],
-    [t("dash.line.phase"), s.currentPhase ?? t("dash.noPhase")],
+    [t("dash.line.phase"), s.currentPhase ? content(s.currentPhase) : t("dash.noPhase")],
     [t("dash.line.deliverables"), String(s.deliverables)],
     [t("dash.line.openMust"), list(s.openMust)],
     [t("dash.line.openNice"), list(s.openNice)],
@@ -123,9 +124,9 @@ function openItemsCard(project: Project): HTMLElement {
         ordered.map(({ it, phase }) =>
           el("li", {}, [
             el("span", { className: "box", textContent: "☐" }),
-            el("span", { className: "check-title", textContent: it.title, dir: "auto" }),
+            live("span", { className: "check-title", dir: "auto" }, () => content(it.title)),
             live("span", { className: "check-meta" }, () =>
-              `${phase} · ${it.priority === "must" ? t("dash.priority.must") : t("dash.priority.nice")}`,
+              `${isolate(content(phase))} · ${it.priority === "must" ? t("dash.priority.must") : t("dash.priority.nice")}`,
             ),
           ]),
         ),
@@ -171,17 +172,25 @@ function deliverablesCard(s: ProjectStatus): HTMLElement {
 
 function alertCard(project: Project, alert: ScopeAlert): HTMLElement {
   if (!alert.alert) {
-    const { node, body } = card("card-scope", "dash.card.scope");
-    body.append(translate(el("p", { className: "big-line" }), "dash.within"));
+    const { node, body } = card("card-scope", "dash.card.scope", ["card-wide", "card-banner"]);
+    const size = project.size;
+    body.append(
+      translate(el("p", { className: "big-line" }), "dash.within"),
+      live("p", { className: "meta" }, () =>
+        size === "L"
+          ? t("dash.scopeNoLimit")
+          : t("dash.scopeLimits", { size, deliverables: DELIVERABLES_BANDS[size].max, days: DURATION_DAYS_BANDS[size].max }),
+      ),
+    );
     return node;
   }
-  const { node, body } = card("card-scope", "dash.card.scope", ["card-alert"]);
+  const { node, body } = card("card-scope", "dash.card.scope", ["card-wide", "card-banner", "card-alert"]);
   body.append(live("p", { id: "scope-alert", className: "alert-text", role: "alert" }, () => alertMessage(alert, project) ?? ""));
   return node;
 }
 
 function phasesCard(project: Project): HTMLElement {
-  const { node, body } = card("card-phases", "dash.card.phases");
+  const { node, body } = card("card-phases", "dash.card.phases", ["card-tall"]);
   const rows = phaseCounts(project).map((c) => {
     const total = c.done + c.open + c.cut;
     const bar = el("div", { className: "phase-bar" });
@@ -197,7 +206,7 @@ function phasesCard(project: Project): HTMLElement {
     seg(c.cut, "cut");
     if (total === 0) bar.append(el("span", { className: "part empty" }));
     return el("div", { className: "phase-row" }, [
-      el("p", { className: "phase-name", textContent: c.name }),
+      live("p", { className: "phase-name", dir: "auto" }, () => content(c.name)),
       bar,
       live("p", { className: "meta" }, () => t("dash.phaseMeta", { done: c.done, open: c.open, cut: c.cut })),
     ]);
@@ -222,7 +231,7 @@ function historyCard(s: ProjectStatus): HTMLElement {
       ]),
       el("p", { className: "act-line" }, [
         translate(el("span", { className: "k" }), "dash.reason"),
-        el("span", { className: "v", textContent: c.reason }),
+        live("span", { className: "v", dir: "auto" }, () => content(c.reason)),
       ]),
       el("p", { className: "act-line" }, [
         translate(el("span", { className: "k" }), "dash.itemsCut"),
@@ -254,11 +263,11 @@ export function mountStatus(root: HTMLElement, project: Project, today: string):
     ]),
   ]);
   const grid = el("div", { className: "bento" }, [
+    alertCard(project, alert),
     openItemsCard(project),
+    phasesCard(project),
     sizeCard(s),
     deliverablesCard(s),
-    alertCard(project, alert),
-    phasesCard(project),
     historyCard(s),
   ]);
   root.replaceChildren(header, grid);

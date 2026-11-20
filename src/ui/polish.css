@@ -595,3 +595,26 @@ input[type="file"]::file-selector-button {
     background: var(--glass-strong);
   }
 }
+
+/* Scope banner: a slim full-width status strip above the cards */
+
+.card-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.25rem;
+  padding-block: 1.1rem;
+}
+
+.card-banner .card-head,
+.card-banner .big-line,
+.card-banner .meta {
+  margin: 0;
+}
+
+.card-banner .card-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.25rem;
+}

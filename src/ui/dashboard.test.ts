@@ -39,10 +39,10 @@ describe("existing project dashboard renders its cards from a project.yml", () =
     document.body.append(root);
   });
 
-  it("the Open items card comes first, then size, deliverables, scope, phases and history", () => {
+  it("the scope banner comes first, then open items, phases, size, deliverables and history", () => {
     mountStatus(root, fromFile(sampleProject("S")), TODAY);
     const order = Array.from(root.querySelectorAll<HTMLElement>(".bento > section")).map((s) => s.id);
-    expect(order).toEqual(["card-open", "card-size", "card-deliverables", "card-scope", "card-phases", "card-history"]);
+    expect(order).toEqual(["card-scope", "card-open", "card-phases", "card-size", "card-deliverables", "card-history"]);
   });
 
   it("the header shows the project name, the size and the track as pills", () => {
