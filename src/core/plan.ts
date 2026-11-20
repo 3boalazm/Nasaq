@@ -1,12 +1,12 @@
 import type { Size, Track } from "./types";
 
-const ENTRY_FILE: Record<Track, string> = {
+export const ENTRY_FILE: Record<Track, string> = {
   dev: "AGENTS.md",
   brand: "README.md",
   uiux: "README.md",
 };
 
-const PROJECT_YAML = "project.yml";
+export const PROJECT_YAML = "project.yml";
 
 const SIZE_FILES: Record<Size, readonly string[]> = {
   S: ["PROJECT.md"],

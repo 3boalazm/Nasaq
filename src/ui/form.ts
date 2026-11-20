@@ -106,7 +106,6 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
   const suggestionEl = el("p", { id: "f-suggestion", className: "suggestion", role: "status" });
   const durationEl = el("p", { id: "f-duration", className: "hint" });
   const deadlineHintEl = el("p", { id: "f-deadline-hint", className: "hint" });
-  const sizeMsgEl = el("p", { id: "f-size-msg", className: "warning" });
   const sizeSelect = el(
     "select",
     { id: "f-size" },
@@ -135,7 +134,6 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
       durationEl,
       deadlineHintEl,
       field("f-size", "Size (override if needed)", sizeSelect),
-      sizeMsgEl,
     ]),
     errorsEl,
     el("div", { className: "actions" }, [downloadBtn]),
@@ -164,7 +162,6 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     if (errors.length > 0) {
       suggestionEl.textContent = "Fill in the fields above to see a suggested size.";
       durationEl.textContent = "";
-      sizeMsgEl.textContent = "";
       downloadBtn.disabled = true;
       return;
     }
@@ -176,10 +173,7 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     durationEl.textContent = `Duration: ${s.duration} day${s.duration === 1 ? "" : "s"}, counting start and deadline.`;
     if (!sizeOverridden) sizeSelect.value = s.size;
 
-    const size = sizeSelect.value as Size;
-    sizeMsgEl.textContent =
-      size === "S" ? "" : `Templates for size ${size} arrive in S2. Download is disabled for this size.`;
-    downloadBtn.disabled = size !== "S";
+    downloadBtn.disabled = false;
   };
 
   form.addEventListener("input", refresh);
@@ -191,9 +185,9 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
 
   downloadBtn.addEventListener("click", async () => {
     const a = readAnswers(form);
-    if (validateAnswers(a).length > 0 || sizeSelect.value !== "S") return;
+    if (validateAnswers(a).length > 0) return;
     try {
-      const project = createProject(a, "S");
+      const project = createProject(a, sizeSelect.value as Size);
       const blob = await buildZip(project);
       save(blob, zipFileName(project));
     } catch (err) {

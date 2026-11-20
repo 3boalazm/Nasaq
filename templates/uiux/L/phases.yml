@@ -1,0 +1,17 @@
+# Phase checklist for size L, from spec section 5.2 (L column).
+phases:
+  - name: Discover
+    items:
+      - "User interviews, audit, analytics, content inventory"
+  - name: Define
+    items:
+      - "IA, journeys, prioritised requirements, success metrics"
+  - name: Design
+    items:
+      - "Wireframes → UI → design system (tokens, components, states, RTL)"
+  - name: Validate
+    items:
+      - "Testing rounds, accessibility audit"
+  - name: Handoff
+    items:
+      - "Specs, token file, component docs, edge cases"

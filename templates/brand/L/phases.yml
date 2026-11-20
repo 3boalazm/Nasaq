@@ -1,0 +1,22 @@
+# Phase checklist for size L, from spec section 5.1 (L column). Items added with + are listed as their own item.
+phases:
+  - name: Discovery
+    items:
+      - "Questionnaire + 5 peers"
+      - "Stakeholder call, peer audit"
+      - "Workshop, name and trademark screen"
+  - name: Strategy
+    items:
+      - "Full strategy, voice, architecture"
+  - name: Identity core
+    items:
+      - "2–3 routes, full lockup set"
+  - name: System
+    items:
+      - "Full brand book, sub-brand rules, stretch test"
+  - name: Applications
+    items:
+      - "All touchpoints, print proofs, field tests"
+  - name: Handover
+    items:
+      - "Files, templates, licences, usage session"

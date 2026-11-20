@@ -54,19 +54,23 @@ describe("intake form", () => {
     expect(btn().disabled).toBe(false);
   });
 
-  it("suggests M and disables download with the S2 message", () => {
+  it("suggests M and enables download (M templates exist)", () => {
     fill({ "f-deadline": "2026-12-01", "f-deliverables": "8" });
     expect(sizeSel().value).toBe("M");
-    expect(text("f-size-msg")).toBe("Templates for size M arrive in S2. Download is disabled for this size.");
-    expect(btn().disabled).toBe(true);
+    expect(btn().disabled).toBe(false);
   });
 
-  it("allows override: picking S for a suggested M enables download", () => {
+  it("suggests L and enables download (L templates exist)", () => {
+    fill({ "f-deadline": "2026-12-20", "f-deliverables": "8" });
+    expect(sizeSel().value).toBe("L");
+    expect(btn().disabled).toBe(false);
+  });
+
+  it("allows override: picking S for a suggested M keeps download enabled", () => {
     fill({ "f-deadline": "2026-12-01", "f-deliverables": "8" });
     sizeSel().value = "S";
     sizeSel().dispatchEvent(new Event("change", { bubbles: true }));
     expect(btn().disabled).toBe(false);
-    expect(text("f-size-msg")).toBe("");
   });
 
   it("keeps an override when answers change afterwards", () => {
@@ -95,6 +99,18 @@ describe("intake form", () => {
     fill({ "f-deadline": "2026-11-10" });
     expect(text("f-deadline-hint")).toMatch(/before the start date/);
     expect(text("f-duration")).toBe("Duration: 1 day, counting start and deadline.");
+  });
+
+  it("download saves the chosen size's ZIP name and content", async () => {
+    fill({ "f-deadline": "2026-12-01", "f-deliverables": "8", "f-approver": "Approver A" });
+    sizeSel().value = "M";
+    sizeSel().dispatchEvent(new Event("change", { bubbles: true }));
+    btn().click();
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    const [blob, filename] = save.mock.calls[0] as [Blob, string];
+    expect(filename).toBe("acme-relaunch.zip");
+    expect(blob.size).toBeGreaterThan(0);
+    save.mockClear();
   });
 
   it("download saves {slug}.zip with a non-empty blob", async () => {

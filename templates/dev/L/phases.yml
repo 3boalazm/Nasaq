@@ -1,0 +1,20 @@
+# Phase checklist for size L, from spec section 5.3 (L column). Items added with + are listed as their own item.
+phases:
+  - name: Spec
+    items:
+      - "PRD, architecture, data model, API contract, non-functional needs"
+  - name: Setup
+    items:
+      - "Branch, preview deploy, env list"
+      - "CI, staging, secrets handling, migration plan, rollback plan"
+  - name: Build
+    items:
+      - "Sprints per Implementation.md (source doc 26 was not available)"
+  - name: Verify
+    items:
+      - "Typecheck, existing tests, manual check"
+      - "New tests, security baseline, preview check"
+      - "Test cases per sprint, security register, performance and accessibility"
+  - name: Release
+    items:
+      - "Release candidate, your approval, monitored release"

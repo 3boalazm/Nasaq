@@ -1,26 +1,22 @@
-import { ENTRY_TEMPLATE, sProjectTemplate } from "./templates";
+import { ENTRY_TEMPLATE, fileTemplate } from "./templates";
 import { render } from "./render";
-import { filePlan } from "./plan";
+import { ENTRY_FILE, PROJECT_YAML, filePlan } from "./plan";
 import { toYaml } from "./projectYaml";
 import type { Project } from "./types";
 
 /**
  * Renders every file in filePlan(track, size) as text, keyed by file name.
- * Only size S has templates in this sprint.
+ * Covers all nine track × size combinations.
  */
 export function renderProjectFiles(project: Project): Record<string, string> {
-  if (project.size !== "S") {
-    throw new Error(`templates for size ${project.size} arrive in S2`);
-  }
-  const plan = filePlan(project.track, project.size);
   const files: Record<string, string> = {};
-  for (const name of plan) {
-    if (name === "project.yml") {
+  for (const name of filePlan(project.track, project.size)) {
+    if (name === PROJECT_YAML) {
       files[name] = toYaml(project);
-    } else if (name === "PROJECT.md") {
-      files[name] = render(sProjectTemplate(project.track), project);
-    } else {
+    } else if (name === ENTRY_FILE[project.track]) {
       files[name] = render(ENTRY_TEMPLATE, project);
+    } else {
+      files[name] = render(fileTemplate(project.track, project.size, name), project);
     }
   }
   return files;

@@ -2,96 +2,97 @@
 
 ## Sprint
 
-S1 — Fill the form, download a working ZIP for any track at size S. Branch: `arena/1120c134-nasaq` (session branch, from `main` at `5573fb2`). Status: PR opened, not merged, not deployed.
+S2 — Size M and L templates. All 9 track × size folders generate. Branch: `arena/3c99cdef-nasaq` (session branch, from `main` at `ad4b875`, which includes S1 merged as PR #2). Status: PR opened, not merged, not deployed. S3 has not been started.
 
-Out of scope (kept): M and L templates, rescope, status view, styling beyond readable defaults.
+Source docs 26 and 27 were not available, as instructed. The L files were built from the outline in the S2 request and from `docs/SPEC.md` sections 3, 5 and 6.
 
 ## Done
 
-Cleanups (same PR):
+Spec fix (first, as instructed):
 
-- Deleted `docs/123` (stray 1-byte file).
-- `docs/SPEC.md` §4 Approvers row now reads `1 approver | 2 approvers | 3 or more`, matching `thresholds.ts`. This resolves S0 Blocker 1.
-- `docs/SPRINTS.md` Preamble: name is "Nasaq"; rule 5 is "Work on the session branch Arena gives you. Open a pull request. Do not merge and do not deploy."
-
-Dependencies: `jszip` (runtime), `jsdom` (dev). Both user-approved.
-
-Templates (`templates/`, size S only):
-
-- `templates/_shared/entry.md`: six always-on rules (spec §3) and the start prompt. Shared by all tracks.
-- `templates/{brand,uiux,dev}/S/PROJECT.md`: sections in order Brief, Out of scope, Phases, Baseline checklist, Decisions (Date | Decision | Why), Feedback log, Handoff.
-- `templates/{brand,uiux,dev}/S/phases.yml`: phase checklist copied from the S column of spec §5.1, §5.2, §5.3. The test `templates.test.ts` checks brand and dev against the spec text.
+- `docs/SPEC.md` §5.2: added the line `Fixed at any size: text contrast AA (4.5:1), works at 375 px and 1280 px, Arabic/RTL parity when the product is bilingual, keyboard reachable with visible focus, every screen has empty, loading and error states.` It sits after the §5.2 table. The S and M UI/UX `PROJECT.md` baseline checklists now use it (the placeholder is gone).
 
 Code:
 
-- `src/core/render.ts` (M1.1): `render(template, project)` replaces every `{{key}}` and throws on an unknown key. `buildContext` derives the values from the project.
-- `src/core/templates.ts`: loads the templates as raw text and parses the S phase lists.
-- `src/core/files.ts`: `renderProjectFiles(project)` renders exactly `filePlan(track, "S")`; `projectSlug` and `zipFileName` give `{project-slug}.zip`. M and L throw `templates ... arrive in S2`.
-- `src/core/zip.ts`: `buildZip(project)` → Blob (jszip).
-- `src/core/intake.ts`: `durationDays` (inclusive of both days, minimum 1), `validateAnswers`, `suggestFromIntake`, `createProject` (all items `must` / `todo`; the initial size is recorded in `sizeHistory`), `parseOutOfScope`, `todayIso`.
-- `src/ui/form.ts`: intake form built with DOM APIs (no `innerHTML`). Fields: name, track, start date (default today), deadline, five size questions, approver, out of scope. Shows the suggested size with the deciding answers, and a size override select. M or L shows "Templates for size M arrive in S2" and disables the download button. Download calls `buildZip` and saves `{slug}.zip`.
-- `src/ui/main.ts`, `src/ui/style.css` (plain CSS, readable defaults). `src/main.ts` removed; `index.html` points at `src/ui/main.ts`.
+- `src/core/templates.ts`: all files under `templates/` load with one `import.meta.glob` (raw text). `fileTemplate(track, size, file)` and `phaseDefs(track, size)` replace the S-only helpers.
+- `src/core/files.ts`: `renderProjectFiles` renders every name in `filePlan` for any size. The S-only guard is gone.
+- `src/core/render.ts`: new context values: `track`, `readFirst` (derived from `filePlan`), `phaseRegistry` (rows for the master registry; brand and uiux add a "proof to capture" cell), `phasePlan` (per-phase item tables), `phaseNameRows`, `changeLogRows` (size history).
+- `src/core/intake.ts`: `createProject` takes any size and uses that size's phase list.
+- `src/core/plan.ts`: exports `ENTRY_FILE` and `PROJECT_YAML`.
+- `src/ui/form.ts`: M and L are enabled; the S2 warning is removed. Download uses the chosen size.
+- `templates/_shared/entry.md`: "Read {{readFirst}}" instead of always naming PROJECT.md (required for L, which has no PROJECT.md).
+
+Templates added:
+
+- M (all three tracks): `PROJECT.md` (S plus a pointer to `PLAN.md`) and `PLAN.md` (phase blocks from `phasePlan`, per-phase checks).
+- `phases.yml` for M and L (all three tracks), from the M and L columns of spec §5.
+- L, dev: `Implementation.md` (roadmap), `Security_issues.md` (SEC-BASE-01..08), `Test_scenarios.md` (TC-BASE-01..08), `Handoff.md`.
+- L, brand: `Brand_Roadmap.md` (Roles table, Mode NEW or RETROFIT, RETROFIT registry), `Brand_Risks.md` (taxonomy LGL, LNG, CUL, ACC, REP, DIG, CON, DST, SCL, DLV; BR-BASE-01..12), `Application_Tests.md` (suites LOG, CLR, TYP, LAY, STA, SIG, DIG, TPL; AT-BASE-xxx-01/02; test types BENCH, PROOF, FIELD, DIGITAL, USER; Applications in scope), `Handoff.md` (Approvals, Asset register, Proof list).
+- L, uiux: `UX_Roadmap.md` (Discover, Define, Design, Validate, Handoff), `UX_Risks.md` (six categories; UXR-BASE-01..08), `UX_Tests.md` (usability task cases; UXT-BASE-01..08), `Handoff.md`.
+- All L roadmap, risk and test files share the header: Planner writes, Builder records, status legend, evidence tags. Brand also has CLIENT-REPORTED.
+- Every L file is under 150 lines (enforced by a test).
 
 Milestones:
 
-- [x] M1.1 `render` replaces every `{{key}}`, throws on unknown key. Tests: `render.test.ts`.
-- [x] M1.2 Three S templates, section order tested, no leftover `{{` (tested for all tracks). The UI/UX baseline is a placeholder — see Blockers 2.
-- [x] M1.3 Entry file: six rules and start prompt, tested.
-- [x] M1.4 Form with the required fields, suggestion with deciding answers, override, M/L disables download with the S2 message. DOM tests in `src/ui/form.test.ts` (jsdom). The manual browser check was NOT run — see Checks run.
-- [x] M1.5 Download produces `{slug}.zip` with exactly `filePlan` files for S. Test `zip.test.ts` unzips each track and compares names. ZIPs for all three tracks were also generated and opened (see Checks run).
+- [x] M2.1 M templates for three tracks; render test covers them; no leftover `{{`.
+- [x] M2.2 `dev/L` is generic. The grep check passes (see Checks run).
+- [x] M2.3 `brand/L` with both NEW and RETROFIT modes.
+- [x] M2.4 `uiux/L`: UX_Roadmap, UX_Risks, UX_Tests, Handoff.
+- [x] M2.5 Guard test: for all nine combinations, the ZIP file list equals `filePlan`, and no file contains `{{`, `TODO` or `lorem`.
 
 ## Current state
 
-- Working tree on `arena/1120c134-nasaq` is complete for S1 and committed as one PR.
-- The form is wired to the pure core. The only DOM code is in `src/ui/`.
-- No M or L template exists; M and L are blocked at the form and at `buildZip` / `renderProjectFiles`.
-- S2 has not been started.
+- All nine track × size combinations generate. Verified by `files.test.ts` and by building nine ZIPs (see Checks run).
+- The form enables download for every size. The browser click was not run (no browser).
+- S3 has not been started.
 
 ## Checks run
 
-Node v22.22.3, npm 10.9.8. All commands from `/home/user/Nasaq` on branch `arena/1120c134-nasaq`. Final run on the tree that was committed:
+Node v22.22.3, npm 10.9.8. All commands from `/home/user/Nasaq` on branch `arena/3c99cdef-nasaq`. No pipes were used for check commands.
 
 | Command | Result |
 | --- | --- |
-| `npm install` (after adding `jszip` and `jsdom`) | exit 0. `found 0 vulnerabilities` |
-| `npm install --save jszip` / `npm install --save-dev jsdom` | Both succeeded (`package.json` shows `dependencies`: jszip ^3.10.2, yaml ^2.9.1; `devDependencies`: jsdom ^31.0.1, typescript, vite, vitest). Note: these two were run through `\| tail -1`, so the exit code shown was tail's. The success is confirmed by the package.json contents and by the final `npm install` below, which ran without a pipe. |
-| `npm test` (before S1 test files existed) | exit 0. 3 files, 51 tests passed (baseline) |
-| `npm run typecheck` (after core/UI code) | exit 0 |
-| `npm run build` (after UI code) | exit 0. `tsc --noEmit` then `vite build`. Output in `dist/` (gitignored) |
-| `npm test` (final) | exit 0. 8 files, 94 tests passed (size 25, projectYaml 15, plan 11, render, templates, zip, intake, form) |
-| `npm run typecheck` (final) | exit 0 |
-| `npm run build` (final) | exit 0 |
-| `npm install` (final) | exit 0 |
+| `git status --short`, `git branch --show-current`, `git log --oneline -1` | Clean tree. Branch `arena/3c99cdef-nasaq`. HEAD `ad4b875` (main, merge of PR #2). |
+| `awk '/^## S2/,/^## S3/' docs/SPRINTS.md` | Read the S2 section. |
+| Python edit of `docs/SPEC.md` §5.2 | Done. `grep` shows the new line at line 104. |
+| `npm run typecheck` (first try) | exit 127. `tsc: not found`. Cause: `node_modules` was absent in this fresh checkout. |
+| `npm install` | exit 0. `found 0 vulnerabilities`. |
+| `npm run typecheck` | exit 0 (after install). |
+| `npm test` (first run after S2 code) | exit 1. 1 failed, 140 passed. Cause: my new "filePlan sizes" test looped over the entry file name (`README.md`), which uses the shared template. Fixed by skipping the entry file, as the renderer does. |
+| `npm test` (final) | exit 0. 9 files, 141 tests passed. |
+| `grep -ril "aboalazm\|payload\|neon\|redesign-v2" templates/dev/L` | exit 1, no output: no match. |
+| `npm run build` | exit 0. `tsc --noEmit` then `vite build`. |
+| Temporary export test (`src/core/tmp-export9.test.ts`) that calls `buildZip` for all 9 and writes `/tmp/nasaq-zips-s2/` | exit 0. Temp file deleted afterwards. 9 ZIPs written. |
+| `unzip -Z1` on each of the 9 ZIPs | Each ZIP lists exactly its `filePlan`. S: entry, `project.yml`, `PROJECT.md`. M: entry, `project.yml`, `PROJECT.md`, `PLAN.md`. L: entry, `project.yml`, four track files. |
+| `unzip` and `sed` on `brand-L` `Brand_Roadmap.md` and `dev-M` `PLAN.md` | Registry rows and phase blocks rendered with the project's phases. No `{{` left. |
 
-First test run after adding the form tests: 2 failures, both caused by my test data. I used a 31-day duration, which is the L band (29+), and expected M. I changed the deadline to 2026-12-01 (12 days, M band). The assertions were not changed.
+Test changes made because S2 changes behaviour (no assertion was weakened):
 
-ZIP check (M1.5 "downloaded and opened"):
+- `templates.test.ts`: `sProjectTemplate` and `sPhaseDefs` became `fileTemplate` and `phaseDefs`. The "Read PROJECT.md fully." check now renders the entry file, instead of reading the raw template.
+- `render.test.ts`: the S-only "no `{{`" test now covers every track and size.
+- `zip.test.ts`: "refuses M and L" became "M and L build a ZIP with their own file lists" (S2 behaviour).
+- `intake.test.ts`: "throws for M and L" became "builds M and L phases from their own spec columns".
+- `form.test.ts`: "M disables download with the S2 message" became "M enables download"; an L case was added; the override and file-name tests were updated for M.
 
-- Browser download NOT run: no browser is installed in the sandbox (no chromium, chrome, firefox, or Playwright cache), so the button click was not run in a real browser. The button path is covered by the jsdom test, which checks the saved filename `acme-relaunch.zip` and a non-empty blob.
-- Instead, `buildZip` was called for the three S tracks with the same project settings and written to `/tmp/nasaq-zips/` (outside the repo). Opened with `unzip -l` and `unzip`:
-  - `brand-demo-project.zip`: `README.md`, `project.yml`, `PROJECT.md`
-  - `uiux-demo-project.zip`: `README.md`, `project.yml`, `PROJECT.md`
-  - `dev-demo-project.zip`: `AGENTS.md`, `project.yml`, `PROJECT.md`
-- The dev `PROJECT.md` was read and shows the title, brief, out of scope, and the five phases with `[must]` items. `project.yml` shows `startDate`, `sizeHistory`, and the phase ids.
+Manual checks NOT run:
 
-Manual UI checks NOT run (M1.4, no browser available):
-
-- Typing into the real form in a browser.
-- Visual layout and readable defaults on a phone-width screen.
-- Clicking Download in a real browser and opening the file from the browser's download folder.
-- Keyboard-only flow and screen-reader labels.
-
-These are the only UI checks not run. The logic behind each is covered by the jsdom tests.
+- Clicking Download for each of the nine combinations in a real browser, and opening each file from the browser's download folder. No browser is installed in the sandbox. The ZIPs were built through the same `buildZip` the button calls and opened with `unzip`.
+- Visual check of the form at 375 px and 1280 px. Not run (no browser).
 
 ## Blockers
 
-1. **Resolved:** S0 Blocker 1 (approvers wording) — fixed by cleanup 2. Blocker 3 (`docs/123`) — fixed by cleanup 1.
-2. **Open question — UI/UX baseline.** Spec §5.2 gives a list of fixed items for brand (§5.1) and dev (§5.3), but no "fixed at any size" line for UI/UX. The UI/UX `PROJECT.md` has a Baseline checklist section with the text "not defined for UI/UX in spec section 5.2. To be confirmed by the owner." M1.2 requires the section, so it is present, but its content is a placeholder. Question: what is the UI/UX baseline list?
-3. **Open, carried from S0 (not confirmed by the user):** S0 Blocker 2 assumptions remain as implemented: non-whole numbers are rejected; a missing `approvedBy` parses as null; `deadline` may be null and its order relative to `startDate` is not checked; invalid `suggestSize` input throws a `RangeError`. The form does show a warning when the deadline is before the start date, and the duration then counts as 1 day. This is UI-only and does not block the data model.
+1. **Question: what does "AD" mean?** The L brand Roles table says "AD and client decide name, logo, palette, type", as in the S2 outline. The spec does not define AD. I wrote it as "the role that signs off brand decisions" with a note to confirm. Needs your answer.
+2. **Question: dev L Build phase.** Spec §5.3 says the L Build column is "Sprints as in doc 26". Doc 26 is not available. The L `phases.yml` item is "Sprints per Implementation.md (source doc 26 was not available)". Should the item be replaced with the real sprint structure when doc 26 is available?
+3. **Assumption: "+" in spec §5 M and L columns is cumulative.** I read "+ stakeholder call, peer audit" (M) as added to the S items, and "+ workshop, name and trademark screen" (L) as added to the M items. Each "+" item is its own checklist item. Please confirm.
+4. **Carried from S0 (still not confirmed):** non-whole numbers rejected; missing `approvedBy` parses as null; `deadline` may be null and is not checked against `startDate` in the data model (the form warns only); invalid `suggestSize` input throws `RangeError`.
+
+Resolved in S2:
+
+- S1 open question on the UI/UX baseline: resolved by the spec line added to §5.2 and used in the S and M templates. The L UX files use the same line in UX_Roadmap and UXR-BASE/UXT-BASE rows.
 
 ## Next
 
 - Review and merge only if the user approves. Do not deploy.
-- Answer Blocker 2 (UI/UX baseline list) before S2, or leave the placeholder.
-- Run the manual UI checks listed above in a browser when one is available, then record the results here.
-- S2 has not been started. Do not start it until S1 is reviewed.
+- Answer Blockers 1 to 3.
+- Run the manual UI checks in a browser when one is available, then record the results here.
+- S3 has not been started. Do not start it until S2 is reviewed.

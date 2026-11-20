@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { render } from "./render";
 import { createProject, type IntakeAnswers } from "./intake";
-import { ENTRY_TEMPLATE, sProjectTemplate } from "./templates";
+import { ENTRY_TEMPLATE, fileTemplate } from "./templates";
+import { filePlan } from "./plan";
 import { TRACKS, type Project } from "./types";
 
 const answers: IntakeAnswers = {
@@ -32,11 +33,16 @@ describe("render", () => {
     expect(() => render("{{constructor}}", project())).toThrow(/constructor/);
   });
 
-  it("leaves no {{ behind in any S template", () => {
+  it("leaves no {{ behind in any template of any track and size", () => {
     for (const track of TRACKS) {
-      const p = { ...project(), track };
-      expect(render(sProjectTemplate(track), p)).not.toContain("{{");
-      expect(render(ENTRY_TEMPLATE, p)).not.toContain("{{");
+      for (const size of ["S", "M", "L"] as const) {
+        const p = createProject({ ...answers, track }, size, "2026-11-20");
+        for (const name of filePlan(track, size)) {
+          if (name === "project.yml") continue;
+          const tpl = name === filePlan(track, size)[0] ? ENTRY_TEMPLATE : fileTemplate(track, size, name);
+          expect(render(tpl, p), `${track}/${size}/${name}`).not.toContain("{{");
+        }
+      }
     }
   });
 

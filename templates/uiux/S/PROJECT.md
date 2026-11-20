@@ -18,7 +18,13 @@
 
 ## Baseline checklist
 
-Fixed at any size: _not defined for UI/UX in spec section 5.2. To be confirmed by the owner._
+Fixed at any size:
+
+- [ ] Text contrast AA (4.5:1)
+- [ ] Works at 375 px and 1280 px
+- [ ] Arabic/RTL parity when the product is bilingual
+- [ ] Keyboard reachable with visible focus
+- [ ] Every screen has empty, loading and error states
 
 ## Decisions
 
