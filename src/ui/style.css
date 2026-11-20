@@ -103,3 +103,99 @@ button:focus-visible {
   background: #9a9aa0;
   cursor: not-allowed;
 }
+
+[hidden] {
+  display: none !important;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #c8c8cc;
+}
+
+.tabs button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: #4a4a4f;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  color: #1a5fb4;
+  border-bottom-color: #1a5fb4;
+}
+
+section[role="tabpanel"] h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid #c8c8cc;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.status dt {
+  font-weight: 600;
+}
+
+.status dd {
+  margin: 0;
+}
+
+.history {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.history th,
+.history td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #e0e0e4;
+  vertical-align: top;
+}
+
+.cut-step {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px dashed #8a8a90;
+  border-radius: 8px;
+}
+
+.cut-step h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cuts {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cut-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+
+#up-file {
+  padding: 0.4rem 0;
+}

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mountIntakeForm, readAnswers, type SaveFn } from "./form";
+import { mountIntakeForm, readAnswers } from "./form";
+import type { SaveFn } from "./dom";
 
 const setVal = (id: string, value: string): void => {
   const node = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
