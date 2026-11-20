@@ -2,9 +2,98 @@
 
 ## Sprint
 
-S5: UI redesign. Branch `arena/7ff7b194-nasaq`, from `main` at `4a23fb0` (S4 merged as PR #5). Pull request: open from this branch, not merged. Not deployed. No further sprint started.
+S6: Arabic UI with RTL. Branch `arena/80b4a315-nasaq`, from `main` at `12719ec` (S5 merged as PR #6). Code commit: `ad82b9d` (fresh clone checked, see below). Pull request: open from this branch, not merged. Not deployed. No further sprint started.
 
-Code commit checked in the latest revision: `e251e11` (fresh clone, see "Review round 3" below). This file is updated in a later commit that only changes docs.
+## S6: Arabic UI with RTL (code commit `ad82b9d`)
+
+The page is in English or Arabic. The language switch is a two-option pill group in the header. The layout turns right-to-left in Arabic. All 400 existing tests still pass, and 37 tests were added.
+
+### What changed
+
+1. **Strings.** All user-visible text is in `src/ui/i18n/en.ts` and `src/ui/i18n/ar.ts`. The two files have the same keys. `src/ui/i18n/index.ts` holds the language state, `t()`, plural lookup, and `bind()`. Each text node is bound to its key, so a switch updates the text in place. The DOM is not rebuilt, so wizard and upload state is kept.
+2. **Error codes.** Core errors now carry a stable `code` and `params` (`src/core/errors.ts`, `CodedError`). The page translates by code; the English message is never shown. Unknown codes get the generic message. The English text in core is unchanged.
+3. **Language switch.** Order: `?lang=` in the address, then the stored choice, then the browser language starting with `ar`, then English. The switch writes `?lang=` with `history.replaceState` (no reload). Storage is `localStorage` key `nasaq-lang`, written inside try/catch. Nothing else is stored.
+4. **RTL.** `<html lang>` and `<html dir>` are set. `style.css` uses logical properties only (`padding-inline-start`, `margin-inline-end`). The progress bar, segments and phase bars are flex or grid, so they fill from the start side. Arrow keys on the selection cards follow the screen: in RTL, Left moves to the next card. The `wireArrowKeys` handler is in `src/ui/dom.ts`. The Latin dates and file names in Arabic text are wrapped in Unicode isolates (LRI/PDI) or `.ltr`, and only in Arabic, so the English text is unchanged.
+5. **Font.** IBM Plex Sans Arabic 5.3.0 (`@fontsource/ibm-plex-sans-arabic@5`, OFL-1.1), Arabic subset, weights 400, 600 and 700, woff2. Files are in `src/ui/fonts/` with `LICENSE-IBMPlexSansArabic.txt`. Arabic comes first in the font stack, then Outfit. Arabic body text has line-height 1.7 and letter-spacing 0. Headings in Arabic have line-height 1.4, so the diacritics are not clipped.
+6. **Numbers.** Western digits in both languages. Dates stay YYYY-MM-DD. Day and phase counts use `Intl.PluralRules` with the Arabic forms (0, 1, 2, 3–10, 11–99, 100+).
+7. **Generated files.** One line under Download ZIP, in both languages, says the generated files stay English.
+
+### Deviations and decisions
+
+- **Core: result shape kept.** `readProjectYaml` returns the same `{ ok, error }` shape, so the existing core tests are unchanged. A new `readProjectYamlCoded` returns `code` and `params`. The UI uses the coded one.
+- **Core: rescope errors.** `src/core/rescope.ts` throws `CodedError` (same messages, same logic) so the UI can translate them. Logic is unchanged.
+- **Core: `MAX_PROJECT_YAML_MB`** is added to `thresholds.ts` (the MB value, derived from the same bytes limit), so no UI file repeats the 1 MB figure.
+- **Dashboard reasons.** The scope alert reasons are rebuilt in `src/ui/status.ts` from `thresholds.ts` (same numbers and wording as core), so they can be translated. `alertMessage(a)` without a project still returns core's English text (existing tests use it).
+- **YAML parser detail.** The message "project.yml is not valid YAML." no longer includes the parser's own detail text on the page. The detail is lost from the page only, not from core.
+- **Test edits (names only, assertions kept):** `src/ui/wizard.test.ts` imported `TRACK_LABELS`, which moved to `trackName()` in `labels.ts`. The one assertion now calls `trackName(t)`, which returns the same English. No test was weakened or deleted.
+- **Test helper:** `src/testutil/files.ts` reads repo files through `process.getBuiltinModule` (as `layout.test.ts` does), because `@types/node` is not installed and was not added.
+- **Language pill buttons** carry the `secondary` class, so the existing "every button is styled" test still passes unchanged.
+- **Storage precedence** is query, then stored choice, then browser language. The brief lists the browser language before the stored choice. The stored choice wins here, so a user who picked a language keeps it on the next visit.
+- **Not added:** no new dependency. `jsdom`, `vitest`, `typescript`, `vite`, `jszip`, `yaml` only.
+
+### Tests added (37)
+
+- `src/ui/i18n/strings.test.ts`: same keys in both files; no empty value; every Arabic value has Arabic letters or is on the Latin allow-list (`Nasaq`, `UI/UX`, `English`, `project.yml`); Arabic differs from English except the language names; Western digits only; every key is used somewhere in the UI.
+- `src/ui/hardcoded.test.ts`: scans every `src/ui/*.ts` (not tests) for English words in string literals, and checks the scanner itself.
+- `src/ui/rtl.test.ts`: `style.css` has no physical left/right property; Arabic font first; the three Arabic font files and their licence exist; Arabic line-height and letter-spacing; no network URL or `@import` in the stylesheet.
+- `src/ui/rtl-arrows.test.ts` (jsdom): arrow-key mapping; in RTL, Left moves to the next card and wraps.
+- `src/ui/i18n/language.test.ts` (jsdom): start language resolution; `html lang` and `dir`; URL update; storage only holds the language; storage blocked does not throw; plural forms in Arabic and English; isolates only in Arabic; error code mapping; the size limit comes from `thresholds.ts`.
+- `src/ui/i18n/switch.test.ts` (jsdom): the switch is a two-option group with `aria-pressed`; switching changes `lang`, `dir`, the URL and the pressed state with no reload; the generated-files note in both languages; wizard values, step and track survive a switch and a Back; validation messages translate and focus stays on the first invalid field; the dashboard renders in Arabic from the sample project (Arabic headings, scope alert text, Western digits).
+
+## Checks run
+
+### Local, `/home/user/Nasaq` (before the code commit, and final)
+
+| Command | Result |
+|---|---|
+| `node_modules/.bin/tsc --noEmit -p .` before `npm ci` | exit 127 (`node_modules` missing). Not a code error. |
+| `npm ci` | exit 0 |
+| `node_modules/.bin/tsc --noEmit -p .` after the core and UI changes | exit 1: `rescope.ts` lost `throw` (fixed), `translate` imported from the wrong module (fixed), `wizard.test.ts` used `TRACK_LABELS` (renamed, same assertion) |
+| `node_modules/.bin/vitest run` at the first full run | exit 1: 3 files failed. Core deep-equal tests (result shape, fixed by `readProjectYamlCoded`); buttons test (pills had no `secondary`, fixed) |
+| `node_modules/.bin/vitest run` after the fixes | exit 0 (27 files, 400 tests) |
+| `vitest run src/ui/i18n src/ui/hardcoded.test.ts` | exit 1 twice, then exit 0 (scanner false positives and checker design fixed; no UI string was loosened) |
+| `vitest run src/ui/i18n src/ui/rtl` | exit 0 (27 tests) |
+| `vitest run src/ui/i18n/switch.test.ts` | exit 1 (4 failures: my test assumptions were wrong, about the focus target, the step-error list, the sample's scope alert, and the duration needing deliverables), then exit 1 (1 failure: risk and unknowns have no default, so the test must choose them), then exit 0 |
+| `npm test` (final, `ad82b9d`) | exit 0. 33 files, 437 tests |
+| `npm run typecheck` (final) | exit 0 |
+| `npm run build` (final) | exit 0. `built in 254ms`; `postbuild` test:dist 14/14 |
+| `npm run test:dist` (final) | exit 0. 14/14 |
+
+### Fresh clone of `ad82b9d` (`/tmp/s6-final`)
+
+| Command | Result |
+|---|---|
+| `git clone -b arena/80b4a315-nasaq` | exit 0 |
+| `npm ci` | exit 0 |
+| `npm test` | exit 0. 33 files, 437 tests |
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0. `built in 183ms`; postbuild 14/14 |
+| `npm run test:dist` | exit 0. 14/14 |
+
+### Font fetch
+
+- `npm pack @fontsource/ibm-plex-sans-arabic@5` run from `/tmp/arfont` returned `shell_error` with no output. Not retried in that folder.
+- The same command run from `/tmp/arfont2`, with the shell working directory set to the repo, exited 0 and gave `ibm-plex-sans-arabic-arabic-{400,600,700}-normal.woff2` and `LICENSE`. These are the files committed. Version 5.3.0, license `OFL-1.1`.
+
+### Dist
+
+- `dist/assets` contains the three Arabic woff2 files (about 42, 46 and 44 kB) and the Outfit files. The dist scan (`npm run test:dist`) passes. No runtime network request is made.
+
+## Visual checks NOT run
+
+There is no browser in the sandbox. None of these was done:
+
+- The Arabic layout on screen: right-to-left order, mirrored bars and steppers, the Back and Continue placement, and the header with the language pill.
+- How the IBM Plex Sans Arabic font looks, and whether Arabic line-height 1.7 and heading 1.4 look right.
+- How Latin dates, file names and code sit inside Arabic sentences (the isolates are in place, but the rendering was not seen).
+- Arrow keys in a real browser (the logic is tested with jsdom).
+- The layout at 320, 375 and 1280 px, with no horizontal scroll. This is still unmeasured from S5.
+- The `?lang=` switch, the stored choice and the browser language in a real browser (tested with jsdom, which fakes the address bar and storage).
+- The Arabic copy has not been checked by a native speaker.
+
+## Next
+
+Owner review of the PR. Read the Arabic copy. Open the page in Chrome and Safari in both languages at 320, 375 and 1280 px, and check the items above before any release.
 
 ## Review round 3 (on `e251e11`)
 
