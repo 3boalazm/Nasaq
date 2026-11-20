@@ -7,7 +7,7 @@ Five sprints, S0 to S4. Give Arena **one sprint per session**: paste the Preambl
 ## Preamble (paste at the top of every session)
 
 ```
-You are building "Project Flow System", a small web page that sets up and maintains a project folder
+You are building "Nasaq", a small web page that sets up and maintains a project folder
 for three kinds of work: brand identity, UI/UX, and development. The attached spec is the source of truth
 (sections 3 to 6 and 8). Do only the sprint below. Do not start the next one.
 
@@ -28,7 +28,7 @@ Rules
    something, say "not run" and why. Never write "should work".
 3. Never weaken or delete a test to make it pass.
 4. No client names, no real project data in templates. Placeholders only.
-5. Work on a branch named sprint/s{n}-{slug}. Open a pull request. Do not merge and do not deploy.
+5. Work on the session branch Arena gives you. Open a pull request. Do not merge and do not deploy.
 6. If the spec is unclear or wrong, stop that milestone and list the question under "Blockers" in HANDOFF.md.
 7. End of session: update HANDOFF.md (Done, Current state, Checks run with results, Blockers, Next), then stop.
 ```

@@ -1,0 +1,105 @@
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #1d1d1f;
+  background: #fafafa;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+}
+
+#app {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+.lead {
+  margin: 0 0 1.5rem;
+  color: #4a4a4f;
+}
+
+.intake {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #8a8a90;
+  border-radius: 6px;
+  background: #fff;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 3px solid #1a5fb4;
+  outline-offset: 2px;
+}
+
+.hint {
+  color: #4a4a4f;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.result {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #c8c8cc;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.suggestion {
+  margin: 0;
+  font-weight: 600;
+}
+
+.warning {
+  margin: 0;
+  color: #8a4b00;
+}
+
+.errors {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #a51d2d;
+}
+
+.actions button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  border: 0;
+  border-radius: 6px;
+  background: #1a5fb4;
+  color: #fff;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  background: #9a9aa0;
+  cursor: not-allowed;
+}
