@@ -1,0 +1,17 @@
+# Phase checklist for size S, from spec section 5.3 (S column).
+phases:
+  - name: Spec
+    items:
+      - "Tech-spec: goal, files, acceptance check"
+  - name: Setup
+    items:
+      - "Branch"
+  - name: Build
+    items:
+      - "1 session"
+  - name: Verify
+    items:
+      - "Typecheck, existing tests, manual check"
+  - name: Release
+    items:
+      - "Your approval, merge"

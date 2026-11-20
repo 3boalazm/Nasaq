@@ -59,7 +59,7 @@ Pick the highest row that matches any column. `[PROPOSED]` thresholds.
 |---|---|---|---|
 | Duration | up to 1 week | 1–4 weeks | over 4 weeks |
 | Deliverables | 1–5 | 6–15 | over 15 |
-| Approvers | you only, or one client contact | one client contact | several, or a committee |
+| Approvers | 1 approver | 2 approvers | 3 or more |
 | Risk | easy to undo | some rework if wrong | hard to undo: production database, print run, legal, launch date |
 | Unknowns | none | a few | research needed before planning |
 

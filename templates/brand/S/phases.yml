@@ -1,0 +1,20 @@
+# Phase checklist for size S, from spec section 5.1 (S column).
+phases:
+  - name: Discovery
+    items:
+      - "Questionnaire + 5 peers"
+  - name: Strategy
+    items:
+      - "One positioning line, 3 attributes"
+  - name: Identity core
+    items:
+      - "1 direction: logo AR/EN, colour, type"
+  - name: System
+    items:
+      - "1-page usage sheet"
+  - name: Applications
+    items:
+      - "2–3 mock-ups"
+  - name: Handover
+    items:
+      - "Files + sheet"

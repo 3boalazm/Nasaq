@@ -2,83 +2,96 @@
 
 ## Sprint
 
-S0 — Scaffold and core engine (no UI). Branch: `arena/b062b4d0-nasaq` (session branch; the `sprint/` naming rule was waived in review). Status: PR #1 open, not merged, not deployed.
+S1 — Fill the form, download a working ZIP for any track at size S. Branch: `arena/1120c134-nasaq` (session branch, from `main` at `5573fb2`). Status: PR opened, not merged, not deployed.
+
+Out of scope (kept): M and L templates, rescope, status view, styling beyond readable defaults.
 
 ## Done
 
-- Scaffold: `package.json` (name `nasaq`), `tsconfig.json` (strict), `vite.config.ts`, `index.html` (title `Nasaq`), `src/main.ts` (placeholder only), `.gitignore`.
-- `src/core/types.ts`: `Track`, `Size`, `Item` (status `todo | doing | done | cut`), `Phase`, `ChangeRecord` (`date`, `fromSize`, `toSize`, `reason`, `approvedBy`, `itemsCut`, `itemsAdded`), `Project` (adds required `startDate`).
-- `src/core/thresholds.ts`: the only place size limits live. Duration 1–7 S, 8–28 M, 29+ L. Deliverables 1–5 S, 6–15 M, 16+ L. Approvers 1 S, 2 M, 3+ L. Risk `easy_undo`/`some_rework`/`hard_undo` → S/M/L. Unknowns `none`/`few`/`research_needed` → S/M/L.
-- `src/core/size.ts` (M0.3): `suggestSize(answers)` → `{ size, decidedBy }`. Size is the highest size any answer maps to; `decidedBy` lists the answer keys that map to that size. Zero, negative, and non-whole numbers throw a `RangeError` that names the field. Unknown risk/unknowns values also throw.
-- `src/core/plan.ts` (M0.4): `filePlan(track, size)`. Output order: entry file, `project.yml`, then size files. L = entry + `project.yml` + the four track files (no `PROJECT.md`/`PLAN.md`), as confirmed in review.
-- `src/core/projectYaml.ts` (M0.5 + schema): `toYaml` / `fromYaml`. Rejects unknown track or size, missing name, missing `startDate`, and any `startDate`, `deadline`, or `ChangeRecord.date` that is not a real `YYYY-MM-DD` date. Each error names the field. Missing lists parse as empty. Missing `approvedBy` parses as null.
-- Tests: `src/core/size.test.ts` (25), `src/core/projectYaml.test.ts` (15), `src/core/plan.test.ts` (11). Total 51. Size tests take every limit from `thresholds.ts`.
-- Docs: `README.md`, `AGENTS.md` (points to `docs/SPEC.md` and `docs/SPRINTS.md`), `docs/SPEC.md`, `docs/SPRINTS.md`, this file.
+Cleanups (same PR):
+
+- Deleted `docs/123` (stray 1-byte file).
+- `docs/SPEC.md` §4 Approvers row now reads `1 approver | 2 approvers | 3 or more`, matching `thresholds.ts`. This resolves S0 Blocker 1.
+- `docs/SPRINTS.md` Preamble: name is "Nasaq"; rule 5 is "Work on the session branch Arena gives you. Open a pull request. Do not merge and do not deploy."
+
+Dependencies: `jszip` (runtime), `jsdom` (dev). Both user-approved.
+
+Templates (`templates/`, size S only):
+
+- `templates/_shared/entry.md`: six always-on rules (spec §3) and the start prompt. Shared by all tracks.
+- `templates/{brand,uiux,dev}/S/PROJECT.md`: sections in order Brief, Out of scope, Phases, Baseline checklist, Decisions (Date | Decision | Why), Feedback log, Handoff.
+- `templates/{brand,uiux,dev}/S/phases.yml`: phase checklist copied from the S column of spec §5.1, §5.2, §5.3. The test `templates.test.ts` checks brand and dev against the spec text.
+
+Code:
+
+- `src/core/render.ts` (M1.1): `render(template, project)` replaces every `{{key}}` and throws on an unknown key. `buildContext` derives the values from the project.
+- `src/core/templates.ts`: loads the templates as raw text and parses the S phase lists.
+- `src/core/files.ts`: `renderProjectFiles(project)` renders exactly `filePlan(track, "S")`; `projectSlug` and `zipFileName` give `{project-slug}.zip`. M and L throw `templates ... arrive in S2`.
+- `src/core/zip.ts`: `buildZip(project)` → Blob (jszip).
+- `src/core/intake.ts`: `durationDays` (inclusive of both days, minimum 1), `validateAnswers`, `suggestFromIntake`, `createProject` (all items `must` / `todo`; the initial size is recorded in `sizeHistory`), `parseOutOfScope`, `todayIso`.
+- `src/ui/form.ts`: intake form built with DOM APIs (no `innerHTML`). Fields: name, track, start date (default today), deadline, five size questions, approver, out of scope. Shows the suggested size with the deciding answers, and a size override select. M or L shows "Templates for size M arrive in S2" and disables the download button. Download calls `buildZip` and saves `{slug}.zip`.
+- `src/ui/main.ts`, `src/ui/style.css` (plain CSS, readable defaults). `src/main.ts` removed; `index.html` points at `src/ui/main.ts`.
 
 Milestones:
 
-- [x] M0.1 Scaffold builds (`npm run build`, `npm run typecheck` exit 0)
-- [x] M0.2 `types.ts` (typecheck passes)
-- [x] M0.3 `suggestSize(answers)` with thresholds from review; tests for all-S, all-L, one lift to M and to L per column, and boundaries 7/8, 28/29, 5/6, 15/16 (plus 1/2 and 2/3 for approvers)
-- [x] M0.4 `filePlan(track, size)`, 9-combination test
-- [x] M0.5 `toYaml` / `fromYaml`: round-trip, rejection tests (unknown track, unknown size, missing name), and date-validation tests (`2026-13-01`, `tomorrow`)
-
-Review items:
-
-1. **Spec and sprint files added to `docs/`: DONE.** The two files had been pushed to this branch by Mustafa Aboalazm (commits `2f46f0c`, `3554542`) under their long names. They are now `docs/SPEC.md` (from `Project_Flow_System_Research_and_Spec_2026-11-20.md`) and `docs/SPRINTS.md` (from `Project_Flow_System_Arena_Sprints_2026-11-20.md`). I rebased this work onto those commits and renamed them with `git mv`. `docs/123` (an empty file from commit `2f46f0c`) was left as is.
-2. Package renamed to `nasaq`; name `Nasaq` used in `README.md`, `AGENTS.md`, `index.html`. The `main.ts` placeholder text also says `Nasaq`.
-3. `src/core/thresholds.ts` created (values as given in review).
-4. M0.3 implemented (see above).
-5. Schema additions done (`startDate`, `ChangeRecord.approvedBy/itemsCut/itemsAdded`, `ItemStatus` `cut`, date validation).
-6. This file updated with every command and result (below).
+- [x] M1.1 `render` replaces every `{{key}}`, throws on unknown key. Tests: `render.test.ts`.
+- [x] M1.2 Three S templates, section order tested, no leftover `{{` (tested for all tracks). The UI/UX baseline is a placeholder — see Blockers 2.
+- [x] M1.3 Entry file: six rules and start prompt, tested.
+- [x] M1.4 Form with the required fields, suggestion with deciding answers, override, M/L disables download with the S2 message. DOM tests in `src/ui/form.test.ts` (jsdom). The manual browser check was NOT run — see Checks run.
+- [x] M1.5 Download produces `{slug}.zip` with exactly `filePlan` files for S. Test `zip.test.ts` unzips each track and compares names. ZIPs for all three tracks were also generated and opened (see Checks run).
 
 ## Current state
 
-- All six S0 review items are done.
-- The spec §4 table was checked against `thresholds.ts`. Duration, deliverables, risk and unknowns match exactly. Approvers has a wording issue (Blocker 1).
-- Test fixtures in `projectYaml.test.ts` gained the new required fields (`startDate`, and the three `ChangeRecord` fields). No assertion was removed or weakened.
-- `startDate` is required and must be a real date. `deadline` is optional (`null` allowed) and must be a real date when set. The code does not check that `deadline` is after `startDate`. That check is not in the sprint text, so it is not implemented.
-- `Item.status` values: `todo | doing | done | cut`. Status lives on the item (confirmed in review).
-- No UI, no templates, no ZIP output. All out of scope for S0.
+- Working tree on `arena/1120c134-nasaq` is complete for S1 and committed as one PR.
+- The form is wired to the pure core. The only DOM code is in `src/ui/`.
+- No M or L template exists; M and L are blocked at the form and at `buildZip` / `renderProjectFiles`.
+- S2 has not been started.
 
 ## Checks run
 
-Node v22.22.3, npm 10.9.8. All commands run from `/home/user/Nasaq` on branch `arena/b062b4d0-nasaq`.
+Node v22.22.3, npm 10.9.8. All commands from `/home/user/Nasaq` on branch `arena/1120c134-nasaq`. Final run on the tree that was committed:
 
 | Command | Result |
 | --- | --- |
-| `npm install` | exit 0. Lockfile root name updated to `nasaq`. |
-| `npm run typecheck` | exit 0 |
-| `npm test` | exit 0. 3 files, 51 tests passed (projectYaml 15, size 25, plan 11) |
-| `npm run build` | exit 0. `tsc --noEmit` then `vite build`, output in `dist/` (gitignored) |
-| `grep -c '"name": "nasaq"' package-lock.json` | 2 (root package and root entry) |
-| Re-run of all four commands above after the rebase and rename | Same results: install 0, typecheck 0, test 0 (51 passed), build 0 |
+| `npm install` (after adding `jszip` and `jsdom`) | exit 0. `found 0 vulnerabilities` |
+| `npm install --save jszip` / `npm install --save-dev jsdom` | Both succeeded (`package.json` shows `dependencies`: jszip ^3.10.2, yaml ^2.9.1; `devDependencies`: jsdom ^31.0.1, typescript, vite, vitest). Note: these two were run through `\| tail -1`, so the exit code shown was tail's. The success is confirmed by the package.json contents and by the final `npm install` below, which ran without a pipe. |
+| `npm test` (before S1 test files existed) | exit 0. 3 files, 51 tests passed (baseline) |
+| `npm run typecheck` (after core/UI code) | exit 0 |
+| `npm run build` (after UI code) | exit 0. `tsc --noEmit` then `vite build`. Output in `dist/` (gitignored) |
+| `npm test` (final) | exit 0. 8 files, 94 tests passed (size 25, projectYaml 15, plan 11, render, templates, zip, intake, form) |
+| `npm run typecheck` (final) | exit 0 |
+| `npm run build` (final) | exit 0 |
+| `npm install` (final) | exit 0 |
 
-Spec and sprint lookup (review item 1), real results. The files were then found on the branch:
+First test run after adding the form tests: 2 failures, both caused by my test data. I used a 31-day duration, which is the L band (29+), and expected M. I changed the deadline to 2026-12-01 (12 days, M band). The assertions were not changed.
 
-| Command or call | Result |
-| --- | --- |
-| `ls` and `find` over `/home/user`, `/home/user/Nasaq`, and `/` for spec/sprint files | No match in the workspace. |
-| Google Drive `search_files` (name and fullText queries) | No spec or sprint file found. Not the source of the files. |
-| `git fetch origin arena/b062b4d0-nasaq` | Remote had 2 new commits (`2f46f0c`, `3554542`) that added `docs/` files. This is where the spec and sprints were. |
-| `git show origin/...:docs/Project_Flow_System_Research_and_Spec_2026-11-20.md` | Read in full. Used for the §4 check. |
-| `git show origin/...:docs/Project_Flow_System_Arena_Sprints_2026-11-20.md` | Read in full. S0 text matches the sprint text used for this work. |
-| `git push` (first attempt) | Rejected as non-fast-forward because of the remote commits above. Nothing was force-pushed. Resolved by rebasing. |
-| `git rebase origin/arena/b062b4d0-nasaq` | Successful, no conflicts. |
+ZIP check (M1.5 "downloaded and opened"):
 
-Not run: browser or UI checks (no UI in S0).
+- Browser download NOT run: no browser is installed in the sandbox (no chromium, chrome, firefox, or Playwright cache), so the button click was not run in a real browser. The button path is covered by the jsdom test, which checks the saved filename `acme-relaunch.zip` and a non-empty blob.
+- Instead, `buildZip` was called for the three S tracks with the same project settings and written to `/tmp/nasaq-zips/` (outside the repo). Opened with `unzip -l` and `unzip`:
+  - `brand-demo-project.zip`: `README.md`, `project.yml`, `PROJECT.md`
+  - `uiux-demo-project.zip`: `README.md`, `project.yml`, `PROJECT.md`
+  - `dev-demo-project.zip`: `AGENTS.md`, `project.yml`, `PROJECT.md`
+- The dev `PROJECT.md` was read and shows the title, brief, out of scope, and the five phases with `[must]` items. `project.yml` shows `startDate`, `sizeHistory`, and the phase ids.
+
+Manual UI checks NOT run (M1.4, no browser available):
+
+- Typing into the real form in a browser.
+- Visual layout and readable defaults on a phone-width screen.
+- Clicking Download in a real browser and opening the file from the browser's download folder.
+- Keyboard-only flow and screen-reader labels.
+
+These are the only UI checks not run. The logic behind each is covered by the jsdom tests.
 
 ## Blockers
 
-1. **Spec §4 approvers row is ambiguous.** The spec lists "one client contact" in both the S row ("you only, or one client contact") and the M row ("one client contact"). The review rule is by count: 1 = S, 2 = M, 3+ = L. I implemented the review rule. If the spec wording is meant to be the rule, the count mapping needs to change. Please confirm which one applies.
-2. **Assumptions to confirm** (implemented, not yet approved):
-   - Non-whole numbers for duration, deliverables, or approvers are rejected (for example `7.5`). Otherwise `7.5` would silently fall between the S and M bands.
-   - Missing `approvedBy` parses as `null`. Missing `itemsCut` / `itemsAdded` parse as `[]`.
-   - `deadline` is allowed to be `null`. Its order relative to `startDate` is not checked (the spec does not say to check it).
-   - Invalid input to `suggestSize` throws a `RangeError`. The sprint text did not say whether to throw or return an error value.
-3. **Stray file on the branch:** `docs/123` (empty, from commit `2f46f0c`). Not removed. Please confirm whether to delete it.
+1. **Resolved:** S0 Blocker 1 (approvers wording) — fixed by cleanup 2. Blocker 3 (`docs/123`) — fixed by cleanup 1.
+2. **Open question — UI/UX baseline.** Spec §5.2 gives a list of fixed items for brand (§5.1) and dev (§5.3), but no "fixed at any size" line for UI/UX. The UI/UX `PROJECT.md` has a Baseline checklist section with the text "not defined for UI/UX in spec section 5.2. To be confirmed by the owner." M1.2 requires the section, so it is present, but its content is a placeholder. Question: what is the UI/UX baseline list?
+3. **Open, carried from S0 (not confirmed by the user):** S0 Blocker 2 assumptions remain as implemented: non-whole numbers are rejected; a missing `approvedBy` parses as null; `deadline` may be null and its order relative to `startDate` is not checked; invalid `suggestSize` input throws a `RangeError`. The form does show a warning when the deadline is before the start date, and the duration then counts as 1 day. This is UI-only and does not block the data model.
 
 ## Next
 
-- Confirm Blocker 1 (approvers rule), Blocker 2 (assumptions), and Blocker 3 (`docs/123`).
-- S1 has not been started. Do not start it until this sprint is reviewed.
+- Review and merge only if the user approves. Do not deploy.
+- Answer Blocker 2 (UI/UX baseline list) before S2, or leave the placeholder.
+- Run the manual UI checks listed above in a browser when one is available, then record the results here.
+- S2 has not been started. Do not start it until S1 is reviewed.
