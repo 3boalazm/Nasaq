@@ -146,3 +146,7 @@ Other limits:
 
 - `docs/SPEC.md`: product spec. `docs/SPRINTS.md`: sprint plan (S0 to S4).
 - `HANDOFF.md`: current sprint state, checks with results, and open questions.
+
+## Visual layer
+
+`src/ui/polish.css` is a look-only layer loaded after `style.css`: page mist, glass cards, gradient accents, larger display type, the dark summary and dashboard header, and one abstract shape per track card. Every raw colour, gradient and shadow it uses is a token in `src/ui/tokens.css`. To go back to the flat look, remove the `polish.css` import in `src/ui/main.ts`. Checked in a real Chrome at 320, 375 and 1280 px in English and Arabic; contrast of text on the gradient surfaces was checked by eye and by the token pairs in `contrast.test.ts`, not by an automated scan of the rendered page.

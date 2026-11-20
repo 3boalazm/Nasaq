@@ -97,3 +97,25 @@ describe("S5 colour rule: tokens.css is the only place colours are defined", () 
     expect(tokensCss).toContain("--radius-pill: 999px");
   });
 });
+
+describe("Polish layer: same colour rule as style.css", () => {
+  const polish = fs.readFileSync(new URL("./polish.css", import.meta.url), "utf8");
+
+  it("polish.css uses no raw hex colour and no rgb()/hsl() values", () => {
+    const raw = polish.match(/#[0-9a-fA-F]{3,6}(?![0-9a-zA-Z_-])|\brgba?\(|\bhsla?\(/g) ?? [];
+    expect(raw).toEqual([]);
+  });
+
+  it("every token used by polish.css is defined in tokens.css", () => {
+    const used = new Set(Array.from(polish.matchAll(/var\(--([a-z0-9-]+)\)/g), (m: RegExpMatchArray) => m[1]!));
+    for (const name of used) expect(tokensCss.includes(`--${name}:`), `--${name}`).toBe(true);
+  });
+
+  it("polish.css has no physical left/right property", () => {
+    expect(polish).not.toMatch(/\b(margin|padding|border)-(left|right)\b|(^|\s)(left|right)\s*:/m);
+  });
+
+  it("white text keeps 4.5:1 on both ends of the dark gradient", () => {
+    for (const end of ["#0a3520", "#1b6842"]) expect(contrast("#ffffff", end)).toBeGreaterThanOrEqual(4.5);
+  });
+});
