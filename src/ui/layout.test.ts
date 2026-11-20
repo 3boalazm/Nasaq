@@ -47,3 +47,61 @@ describe("overflow rules in style.css (regression guard, not a layout measuremen
     expect(ruleBody("body")).toMatch(/overflow-wrap:\s*anywhere/);
   });
 });
+
+// S5 rules read from the stylesheets. These are regression guards on the CSS, not a layout measurement.
+const tokensCss = fs.readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
+
+/** The text inside the first @media block whose query matches `query`, or "" when there is none. */
+function mediaBody(query: string): string {
+  const start = css.indexOf(`@media (${query})`);
+  if (start < 0) return "";
+  const open = css.indexOf("{", start);
+  let depth = 0;
+  for (let i = open; i < css.length; i++) {
+    if (css[i] === "{") depth++;
+    if (css[i] === "}") {
+      depth--;
+      if (depth === 0) return css.slice(open + 1, i);
+    }
+  }
+  return "";
+}
+
+describe("S5 layout and motion rules (regression guard, not a layout measurement)", () => {
+  it("below 900px the wizard and the dashboard are one column", () => {
+    expect(ruleBody(".intake")).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+    expect(ruleBody(".bento")).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  });
+
+  it("from 900px the wizard has a step column and a summary column, and the dashboard has three", () => {
+    const wide = mediaBody("min-width: 900px");
+    expect(wide).toMatch(/\.intake\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*18rem\)/);
+    expect(wide).toMatch(/\.bento\s*\{[^}]*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  });
+
+  it("every transition and animation is 150ms or shorter", () => {
+    const durations = [...(css + tokensCss).matchAll(/(\d+(?:\.\d+)?)(ms|s)\b/g)].map((m) =>
+      m[2] === "s" ? Number(m[1]) * 1000 : Number(m[1]),
+    );
+    expect(durations.length).toBeGreaterThan(0);
+    for (const d of durations) expect(d).toBeLessThanOrEqual(150);
+  });
+
+  it("reduced motion turns transitions and animations off", () => {
+    const body = mediaBody("prefers-reduced-motion: reduce");
+    expect(body).toMatch(/transition:\s*none\s*!important/);
+    expect(body).toMatch(/animation:\s*none\s*!important/);
+  });
+
+  it("the Outfit font is bundled from the repository, and its licence file is committed", () => {
+    expect(css).toContain('font-family: "Outfit"');
+    expect(css).toMatch(/url\("\.\/fonts\/outfit-latin-400-normal\.woff2"\)/);
+    const licence = fs.readFileSync(new URL("./fonts/LICENSE-Outfit.txt", import.meta.url), "utf8");
+    expect(licence).toContain("SIL Open Font License");
+  });
+
+  it("the page uses no web font or stylesheet from another host", () => {
+    expect(css).not.toMatch(/@import/);
+    expect(css).not.toMatch(/url\(\s*["']?https?:/);
+  });
+});

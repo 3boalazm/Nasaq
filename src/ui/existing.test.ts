@@ -5,6 +5,17 @@ import type { SaveFn } from "./dom";
 import { toYaml } from "../core/projectYaml";
 import { sampleProject } from "../testutil/sample";
 
+/** The checked new size in the rescope cards. */
+function checkedSize(): string {
+  return (document.querySelector('input[name="rs-size"]:checked') as HTMLInputElement | null)?.value ?? "";
+}
+/** Chooses a rescope size card, as a user does: check the radio and fire change. */
+function pickSize(value: string): void {
+  const radio = document.getElementById(`rs-size-${value}`) as HTMLInputElement;
+  radio.checked = true;
+  radio.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 /** Uploads text, then waits until the page shows the outcome (error text or status card). */
 async function upload(text: string, name = "project.yml"): Promise<void> {
   const input = document.getElementById("up-file") as HTMLInputElement;
@@ -54,7 +65,7 @@ describe("existing project UI (upload, status, rescope)", () => {
     await upload(toYaml(big));
     await vi.waitFor(() => expect(document.getElementById("scope-alert")).not.toBeNull());
     expect(document.getElementById("scope-alert")?.textContent).toMatch(/Suggested next size: M/);
-    expect((document.getElementById("rs-size") as HTMLSelectElement).value).toBe("M");
+    expect(checkedSize()).toBe("M");
   });
 
   it("after a rescope the status shows the new size and the change history", async () => {
@@ -63,10 +74,10 @@ describe("existing project UI (upload, status, rescope)", () => {
     (document.getElementById("rs-reason") as HTMLInputElement).value = "Client cut scope";
     (document.getElementById("rs-approved") as HTMLInputElement).value = "Approver A";
     (document.getElementById("rs-date") as HTMLInputElement).value = "2026-11-05";
-    (document.getElementById("rs-size") as HTMLSelectElement).value = "S";
+    pickSize("S");
     (document.getElementById("rs-download") as HTMLButtonElement).click();
     await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
-    await vi.waitFor(() => expect(document.querySelector("table.history tbody")?.textContent).toContain("M → S"));
+    await vi.waitFor(() => expect(document.querySelector("ol.activity")?.textContent).toContain("M → S"));
     expect(document.getElementById("status-box")?.textContent).toContain("S");
   });
 });

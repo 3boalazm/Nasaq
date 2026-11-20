@@ -72,7 +72,9 @@ describe("M4.1 upload safety in the Existing project panel", () => {
     (document.getElementById("rs-reason") as HTMLInputElement).value = "Client cut scope";
     (document.getElementById("rs-approved") as HTMLInputElement).value = "Approver A";
     (document.getElementById("rs-date") as HTMLInputElement).value = "2026-11-05";
-    (document.getElementById("rs-size") as HTMLSelectElement).value = "S";
+    const small = document.getElementById("rs-size-S") as HTMLInputElement;
+    small.checked = true;
+    small.dispatchEvent(new Event("change", { bubbles: true }));
     (document.getElementById("rs-download") as HTMLButtonElement).click();
     await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(save.mock.calls[0]![1]).toMatch(/^project-rescope-S\.zip$/);

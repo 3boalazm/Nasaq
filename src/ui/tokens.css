@@ -1,0 +1,42 @@
+/*
+ * Design tokens. Every colour, radius and shadow used by the page is defined here and nowhere else.
+ * Text pairs are checked to be at least 4.5:1 in src/ui/contrast.test.ts, which reads these names.
+ */
+:root {
+  /* Surfaces and ink */
+  --page: #f5f5f2;
+  --surface: #ffffff;
+  --ink: #15181c;
+  --ink-2: #4d535b;
+  --ink-3: #5f656e;
+  --line: #8d9199;
+  --line-soft: #e4e5e1;
+
+  /* One green accent scale: dark for selected states and primary buttons, light for progress */
+  --accent: #0f4d2e;
+  --on-accent: #ffffff;
+  --accent-light: #9fdcb9;
+  --accent-tint: #e4f5ea;
+  --accent-text: #0f4d2e;
+
+  /* Track tints (flat backgrounds only) */
+  --tint-brand: #f6e7da;
+  --tint-uiux: #ece6f6;
+  --tint-dev: #e2f2e6;
+
+  /* Status colours */
+  --alert-bg: #fbeed2;
+  --alert-ink: #6a4200;
+  --error: #a3182a;
+  --cut: #c9ccd1;
+  --focus: #15181c;
+
+  /* Shape and depth */
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 1px 2px rgba(21, 24, 28, 0.06), 0 4px 16px rgba(21, 24, 28, 0.06);
+
+  /* Motion: short and optional, see prefers-reduced-motion in style.css */
+  --ease: 120ms ease-out;
+}

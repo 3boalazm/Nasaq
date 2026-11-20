@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { alertMessage, mountStatus, statusLines } from "./status";
-import { status, scopeAlert } from "../core/status";
+import { scopeAlert, status } from "../core/status";
 import { sampleProject } from "../testutil/sample";
 
 describe("status UI", () => {
@@ -38,11 +38,11 @@ describe("status UI", () => {
     document.body.append(root);
     const p = sampleProject("S");
     const big = { ...p, phases: [{ ...p.phases[0]!, items: Array.from({ length: 6 }, (_, i) => ({ id: `i${i}`, title: `t${i}`, priority: "must" as const, status: "todo" as const })) }] };
-    mountStatus(root, status(big, "2026-11-01"), scopeAlert(big));
-    expect(root.querySelector("dd")?.textContent).toBe("Sample Project");
+    mountStatus(root, big, "2026-11-01");
+    expect(root.querySelector(".dash-name")?.textContent).toBe("Sample Project");
     const alert = root.querySelector("#scope-alert");
     expect(alert?.getAttribute("role")).toBe("alert");
-    expect(root.querySelector("table.history tbody tr")?.textContent).toContain("S");
+    expect(root.querySelector("ol.activity > li")?.textContent).toContain("Initial sizing");
     root.remove();
   });
 });
