@@ -22,7 +22,7 @@ async function zipText(blob: Blob, name: string): Promise<string> {
 
 /** Expected ZIP file names for a direction, written out per track (no derived lists). */
 const L_FILES: Record<Track, string[]> = {
-  brand: ["Application_Tests.md", "Brand_Playbook.md", "Brand_Risks.md", "Brand_Roadmap.md", "Handoff.md"],
+  brand: ["00_AI_Orchestration.md", "00_Governance.md", "00_Risk_Register.md", "01_Project_Intelligence.md", "02_Brand_Strategy.md", "03_Creative_Development.md", "04_Design_System.md", "05_Quality_Validation.md", "06_Delivery_Lifecycle.md", "Handoff.md"],
   uiux: ["UX_Risks.md", "UX_Roadmap.md", "UX_Tests.md", "Handoff.md"],
   dev: ["Handoff.md", "Implementation.md", "Security_issues.md", "Test_scenarios.md"],
 };
@@ -132,7 +132,7 @@ describe("M3.2 rescope ZIP: file list for all six directions, all tracks", () =>
     expect(newFilesFor("brand", "L", "S")).toEqual(["PROJECT.md"]);
     expect(newFilesFor("brand", "M", "S")).toEqual([]);
     // plan order, not alphabetical
-    const brandL = ["Brand_Roadmap.md", "Brand_Risks.md", "Application_Tests.md", "Handoff.md", "Brand_Playbook.md"];
+    const brandL = ["00_Governance.md", "00_AI_Orchestration.md", "00_Risk_Register.md", "Handoff.md", "01_Project_Intelligence.md", "02_Brand_Strategy.md", "03_Creative_Development.md", "04_Design_System.md", "05_Quality_Validation.md", "06_Delivery_Lifecycle.md"];
     expect(newFilesFor("brand", "S", "L")).toEqual(brandL);
     expect(newFilesFor("brand", "M", "L")).toEqual(brandL);
   });
@@ -155,8 +155,8 @@ describe("RESCOPE_NOTE.md instructions for each direction", () => {
   it("L → M and L → S: freeze the risk and test files; carry open items into the new PROJECT.md baseline", () => {
     const toM = renderRescopeNote(rescope(sampleProject("L", "brand"), "M", "x", APPROVER, DATE), "L");
     expect(toM).toContain("Frozen on 2026-11-05");
-    expect(toM).toContain("Brand_Risks.md");
-    expect(toM).toContain("Application_Tests.md");
+    expect(toM).toContain("00_Risk_Register.md");
+    expect(toM).toContain("05_Quality_Validation.md");
     expect(toM).toContain("Baseline checklist of the new PROJECT.md");
     const toS = renderRescopeNote(rescope(sampleProject("L", "uiux"), "S", "x", APPROVER, DATE), "L");
     expect(toS).toContain("UX_Risks.md");

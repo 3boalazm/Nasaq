@@ -1,4 +1,4 @@
-import { ENTRY_FILE, PROJECT_YAML, filePlan } from "./plan";
+import { BRAND_L_GOVERNING, ENTRY_FILE, PROJECT_YAML, filePlan } from "./plan";
 import { APPROVERS_BANDS, DELIVERABLES_BANDS, DURATION_DAYS_BANDS } from "./thresholds";
 import type { Phase, Project, Size } from "./types";
 
@@ -75,11 +75,13 @@ export function buildContext(project: Project): Record<string, string> {
   const extra = filePlan(project.track, project.size).filter(
     (f) => f !== ENTRY_FILE[project.track] && f !== PROJECT_YAML,
   );
+  const modular = project.track === "brand" && project.size === "L";
   return {
     name: project.name,
     track: project.track,
     size: project.size,
-    readFirst: joinNames(extra),
+    readFirst: joinNames(modular ? [...BRAND_L_GOVERNING] : extra),
+    readNote: modular ? " Then open the numbered module for the phase in hand (01 to 06)." : "",
     startDate: project.startDate,
     deadline: project.deadline ?? "not set",
     approver: project.approver ?? "not set",

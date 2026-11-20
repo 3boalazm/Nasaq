@@ -22,10 +22,9 @@ describe("filePlan", () => {
       L: [
         "README.md",
         "project.yml",
-        "Brand_Roadmap.md",
-        "Brand_Risks.md",
-        "Application_Tests.md",
-        "Handoff.md", "Brand_Playbook.md",
+        "00_Governance.md", "00_AI_Orchestration.md", "00_Risk_Register.md", "Handoff.md",
+        "01_Project_Intelligence.md", "02_Brand_Strategy.md", "03_Creative_Development.md",
+        "04_Design_System.md", "05_Quality_Validation.md", "06_Delivery_Lifecycle.md",
       ],
     },
     uiux: {

@@ -70,9 +70,7 @@ describe("L files", () => {
     const project = createProject({ ...base, track }, "L", "2026-11-20");
     for (const [name, text] of Object.entries(renderProjectFiles(project))) {
       if (name === "project.yml") continue;
-      // The playbook is a reference read one section at a time, so it has its own, larger limit.
-      const limit = name === "Brand_Playbook.md" ? 200 : 150;
-      expect(text.split("\n").length, name).toBeLessThan(limit);
+      expect(text.split("\n").length, name).toBeLessThan(150);
     }
   });
 });

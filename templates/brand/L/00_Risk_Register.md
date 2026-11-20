@@ -1,6 +1,6 @@
-# {{name}} — brand risks register (size L)
+# {{name}} — 00 Risk register (size L)
 
-**Planner** sets the baseline and gates. **Builder** records findings. Findings are never deleted. A finding that cannot be fixed becomes Deferred with a dated decision.
+Part of the governing layer. **Planner** sets the baseline and gates. **Builder** records findings. Findings are never deleted. A finding that cannot be fixed becomes Deferred with a dated decision.
 
 Screening only: name and logo screening is not legal clearance. Counsel confirms.
 
@@ -63,13 +63,13 @@ Starting list. Score each one at the start, review at every gate, add your own.
 
 | ID | Risk | P | I | Score | Owner | Mitigation | Next review |
 |---|---|---|---|---|---|---|---|
-| PR-01 | Feedback arrives late or from several voices | _ | _ | _ | _ | One decision owner; reply window (Playbook 0.1) | _ |
-| PR-02 | Scope grows without a change request | _ | _ | _ | _ | Change requests (Playbook 0.2) | _ |
+| PR-01 | Feedback arrives late or from several voices | _ | _ | _ | _ | One decision owner; reply window (00_Governance.md section 6) | _ |
+| PR-02 | Scope grows without a change request | _ | _ | _ | _ | Change requests (00_Governance.md section 7) | _ |
 | PR-03 | Name or mark conflicts with an existing one | _ | _ | _ | _ | Screening in Discovery; counsel before the Identity gate | _ |
-| PR-04 | Approvers disagree on a route | _ | _ | _ | _ | Route scoring (Playbook 3.2); strategy approved first | _ |
+| PR-04 | Approvers disagree on a route | _ | _ | _ | _ | Route scoring (03_Creative_Development.md); strategy approved first | _ |
 | PR-05 | Font or imagery licence does not cover a use | _ | _ | _ | _ | Licence before use; BR-BASE-01 and 02 | _ |
 | PR-06 | Printed colour does not match | _ | _ | _ | _ | One physical proof per medium, early | _ |
-| PR-07 | AI-made asset with unclear ownership reaches a master file | _ | _ | _ | _ | AI rules (Playbook 0.3); AI log | _ |
+| PR-07 | AI-made asset with unclear ownership reaches a master file | _ | _ | _ | _ | AI rules and AI log (00_AI_Orchestration.md) | _ |
 | PR-08 | Deadline moves closer | _ | _ | _ | _ | Rescope in Nasaq; cut nice items first | _ |
 
 ## 6 Case format

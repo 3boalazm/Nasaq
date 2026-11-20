@@ -90,7 +90,19 @@ Order from the sources: discovery, then strategy, then identity design, then gui
 
 Fixed at any size: AR/EN parity, licence before use, versioned file names, client approval before anything leaves.
 
-**Size L adds a fifth file, `Brand_Playbook.md`** (added 2026-11-20 after a review of the generated L files). It holds what the four role files only named: the feedback, change-request and AI rules; the research questions for Discovery; the required Strategy outputs; the Identity core production spec; the application catalogue with sector starting sets; and the delivery spec. Each output has an acceptance check. It is read one section per phase. Sizes S and M are unchanged.
+**Brand size L is six modules under a governing layer** (changed 2026-11-20 after a review of the generated L files; it replaces the four brand files). Sizes S and M are unchanged, and so is the form.
+
+| Layer | Files | Holds |
+|---|---|---|
+| Governing | `00_Governance.md`, `00_AI_Orchestration.md`, `00_Risk_Register.md`, `Handoff.md` | Scope, roles, timeline, feedback and change rules, version control; agent prompts, AI rules and log; scored risks; state, approvals, decisions |
+| 01 | `01_Project_Intelligence.md` | Brief, stakeholders, research framework, market, insights |
+| 02 | `02_Brand_Strategy.md` | Required strategy outputs with acceptance checks |
+| 03 | `03_Creative_Development.md` | Routes, route scoring, component specs |
+| 04 | `04_Design_System.md` | Guide, tokens, templates, application catalogue and scope |
+| 05 | `05_Quality_Validation.md` | Tests with pass conditions, five validation areas, proof list |
+| 06 | `06_Delivery_Lifecycle.md` | Formats, folders, naming, rights, asset register, maintenance |
+
+The governing files are read every session; a module is opened only for its phase. For the rescope rule, the roadmap, risk and test roles are `00_Governance.md`, `00_Risk_Register.md` and `05_Quality_Validation.md`.
 
 ### 5.2 UI/UX
 Base model: Double Diamond (discover, define, develop, deliver), which pairs diverging and converging in two rounds. `[SOURCE]`
