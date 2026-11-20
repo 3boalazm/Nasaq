@@ -3,6 +3,7 @@ import { ENTRY_FILE, PROJECT_YAML, filePlan, roleFiles } from "./plan";
 import { render } from "./render";
 import { ENTRY_TEMPLATE, RESCOPE_NOTE_TEMPLATE, fileTemplate, rescopeSnippet } from "./templates";
 import { isRealIsoDate, toYaml } from "./projectYaml";
+import { CodedError } from "./errors";
 import { SIZES, type ChangeRecord, type Item, type Project, type Size, type Track } from "./types";
 
 const RANK: Record<Size, number> = { S: 0, M: 1, L: 2 };
@@ -34,33 +35,33 @@ export function rescope(
   date: string,
   options: RescopeOptions = {},
 ): Project {
-  if (!(SIZES as readonly string[]).includes(newSize)) throw new Error(`unknown size ${newSize}`);
-  if (newSize === project.size) throw new Error(`the project is already size ${project.size}`);
+  if (!(SIZES as readonly string[]).includes(newSize)) throw new CodedError("size-unknown", `unknown size ${newSize}`, { value: newSize });
+  if (newSize === project.size) throw new CodedError("size-same", `the project is already size ${project.size}`, { size: project.size });
   const cleanReason = reason.trim();
-  if (cleanReason === "") throw new Error("a reason is required for a size change");
+  if (cleanReason === "") throw new CodedError("reason-required", "a reason is required for a size change");
   const cleanApprover = typeof approvedBy === "string" ? approvedBy.trim() : "";
-  if (cleanApprover === "") throw new Error("the person who approved the change is required");
-  if (!isRealIsoDate(date)) throw new Error("date must be a real date (YYYY-MM-DD)");
+  if (cleanApprover === "") throw new CodedError("approver-required", "the person who approved the change is required");
+  if (!isRealIsoDate(date)) throw new CodedError("date-invalid", "date must be a real date (YYYY-MM-DD)", { field: "date" });
 
   const cutIds = [...new Set(options.cutItemIds ?? [])];
   if (cutIds.length > 0 && directionOf(project.size, newSize) !== "down") {
-    throw new Error("items can be cut only when moving down");
+    throw new CodedError("cut-not-down", "items can be cut only when moving down");
   }
 
   const byId = new Map<string, Item>();
   for (const ph of project.phases) for (const it of ph.items) byId.set(it.id, it);
   for (const id of cutIds) {
     const item = byId.get(id);
-    if (!item) throw new Error(`no item ${id} in project.yml`);
+    if (!item) throw new CodedError("item-missing", `no item ${id} in project.yml`, { id });
     if (item.status !== "todo" && item.status !== "doing") {
-      throw new Error(`item ${id} is not open (status ${item.status})`);
+      throw new CodedError("item-not-open", `item ${id} is not open (status ${item.status})`, { id, status: item.status });
     }
   }
 
   const mustCuts = cutIds.filter((id) => byId.get(id)!.priority === "must");
   const mustReason = (options.mustCutReason ?? "").trim();
   if (mustCuts.length > 0 && mustReason === "") {
-    throw new Error(`cutting a must item needs a typed reason (${mustCuts.join(", ")})`);
+    throw new CodedError("must-reason-required", `cutting a must item needs a typed reason (${mustCuts.join(", ")})`, { ids: mustCuts.join(", ") });
   }
 
   const phases = project.phases.map((ph) => ({
@@ -122,7 +123,7 @@ function fileRows(track: Track, from: Size, to: Size): string[] {
 /** Renders RESCOPE_NOTE.md for a change from `from` to the project's current size. */
 export function renderRescopeNote(project: Project, from: Size): string {
   const change = project.sizeHistory[project.sizeHistory.length - 1];
-  if (!change || change.toSize !== project.size) throw new Error("the last change record does not match the project size");
+  if (!change || change.toSize !== project.size) throw new CodedError("history-mismatch", "the last change record does not match the project size");
   const roles = roleFiles(project.track);
   // Markdown table cells: a "|" in a title would split the cell, so escape it.
   const cutLabels = describeItems(project, change.itemsCut).map((l) => l.replace(/\|/g, "\\|"));

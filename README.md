@@ -12,6 +12,16 @@ No backend, no accounts, no database, no analytics, no network calls at runtime.
 
 `npm run build` also runs the dist check (`postbuild`): it fails if the built page contains any `http://` or `https://` text outside license comments.
 
+### Language
+
+The page is in English or Arabic (العربية). Use the two-option pill in the header to switch; the page does not reload.
+
+- First visit: `?lang=ar` or `?lang=en` in the address wins. Without it, a stored choice is used, then the browser language (Arabic if it starts with `ar`), then English.
+- The choice is remembered in the browser's `localStorage` under the key `nasaq-lang`. Nothing else is stored.
+- Arabic sets the page to right-to-left (`dir="rtl"`). Numbers, dates, file names and code stay left-to-right inside Arabic text.
+- Generated files (Markdown, `project.yml`, `RESCOPE_NOTE.md`) are always in English, because AI tools read them.
+- The strings are in `src/ui/i18n/en.ts` and `src/ui/i18n/ar.ts`. Both files must have the same keys; `src/ui/i18n/strings.test.ts` checks this.
+
 ## Stack
 
 - Vite + TypeScript (strict), plain CSS, no UI framework
@@ -98,23 +108,29 @@ Change a number there, then run `npm test`. The tests read these values from the
 ## Look and feel
 
 - Colours, radii and shadows are defined only in `src/ui/tokens.css`. `src/ui/style.css` uses those names and no raw colour values. `src/ui/contrast.test.ts` checks the text pairs against 4.5:1.
-- The font is Outfit, a geometric sans, self-hosted in `src/ui/fonts/` (SIL Open Font License 1.1; the licence is in `src/ui/fonts/LICENSE-Outfit.txt`). Nothing is loaded from another host.
+- The Latin font is Outfit, a geometric sans, self-hosted in `src/ui/fonts/` (SIL Open Font License 1.1; the licence is in `src/ui/fonts/LICENSE-Outfit.txt`). The Arabic font is IBM Plex Sans Arabic, self-hosted in the same folder (SIL Open Font License 1.1; `src/ui/fonts/LICENSE-IBMPlexSansArabic.txt`), weights 400, 600 and 700. Arabic comes first in the font stack. Nothing is loaded from another host.
+- `src/ui/style.css` uses logical properties (`inline-start`, `inline-end`), not left and right. `src/ui/rtl.test.ts` fails if a physical left or right property comes back.
 - The New project form is a three-step wizard. The Existing project page is a dashboard built from the uploaded `project.yml`.
 
 ## Known limits
 
 Browser checks that have not been run. There is no browser in the build sandbox, so none of these were done.
 
+- S6 Arabic on screen: the right-to-left layout, the mirrored progress bars, steppers and phase bars, and how the Arabic font looks. Nothing in Arabic has been seen in a browser.
+- S6 mixed text: how Latin dates, file names and code sit inside Arabic sentences. The bidi isolates are in place and the strings are tested, but the rendering has not been seen.
+- S6 arrow keys on the Arabic selection cards: Left and Right follow the screen. The logic is covered by `src/ui/rtl-arrows.test.ts` (jsdom), not by a real keypress in a browser.
+- S6 the language pill on narrow screens, and the header at 320, 375 and 1280 px.
+- S6 the Arabic copy has not been reviewed by a native speaker. It was written for the product tone the brief asks for, and it needs a read-through before a wider release.
+- S6 the `?lang=` switch, the stored choice and `navigator.language` in a real browser. These are tested with jsdom, which fakes the address bar and storage.
 - S5 visual checks: the new wizard and dashboard on screen. Not seen in any browser, so the look, the colours, and the spacing are unchecked.
 - S5 layout at 320, 375 and 1280 px, for both tabs, measured in a browser (no horizontal scroll). The CSS rules are guarded by tests, but no width was measured.
-- S5 keyboard: arrow keys moving between the selection cards, and the visible focus ring on each control. Native radio behaviour is assumed, not seen.
+- S5 keyboard: the visible focus ring on each control. Native radio behaviour is assumed, not seen.
 - S5 drag and drop of `project.yml` onto the drop zone in a real browser. The drop path has a jsdom test (`src/ui/upload-zone.test.ts`), which fakes the drop event.
 - S5 the Outfit font rendering in a browser. The font file is served (HTTP 200 from `vite preview`), but how it looks was not seen.
 - Opening the page in a browser and switching between the New project and Existing project tabs.
 - Choosing a real `project.yml` with the file picker. The upload path is covered by jsdom tests, not by a real picker.
 - How the must-cut warning, the required "Approved by" field, and the status card look on screen.
 - Clicking "Download ZIP" and "Download rescope ZIP" in a browser and opening the files. ZIP contents are covered by tests.
-- Layout at 375 px and 1280 px width, including the size history list on a phone.
 - Keyboard use of the tabs and the form, with a visible focus ring, in a real browser. Focus order and labels are covered by jsdom tests.
 - Screen reader behaviour. Not tested.
 - Running the built page itself (`dist/`) in a browser. The ZIPs for all nine track and size combinations were generated by the same core code the page calls, not by clicking the built page.
@@ -122,8 +138,9 @@ Browser checks that have not been run. There is no browser in the build sandbox,
 Other limits:
 
 - The dist check allows two URL strings that bundled dependencies keep in code (error hints). They are listed in `scripts/dist-scan.test.ts`. See `HANDOFF.md`.
-- The page is in English only. Arabic is supported in project names, which are text, but the UI and templates are not translated.
-- No storage: a project is only in the `project.yml` the user keeps.
+- The generated files (Markdown, `project.yml`, `RESCOPE_NOTE.md`) are English in both languages, by design.
+- Core error messages are shown in the page language by error code. The English parser detail that used to follow "project.yml is not valid YAML" is no longer shown in the page; the message itself is.
+- No storage: a project is only in the `project.yml` the user keeps. The only browser storage is the language choice.
 
 ## Docs
 

@@ -1,10 +1,11 @@
-import { readProjectYaml, TOO_LARGE_MESSAGE } from "../core/readProject";
+import { readProjectYamlCoded } from "../core/readProject";
 import { MAX_PROJECT_YAML_BYTES } from "../core/thresholds";
 import { todayIso } from "../core/intake";
 import type { Project } from "../core/types";
 import { el, saveBlob, type SaveFn } from "./dom";
 import { mountStatus } from "./status";
 import { mountRescope } from "./rescope";
+import { errorText, onLanguageChange, t, translate } from "./i18n";
 
 export interface ExistingOptions {
   save?: SaveFn;
@@ -28,14 +29,20 @@ export function mountExisting(root: HTMLElement, opts: ExistingOptions = {}): vo
   const save = opts.save ?? saveBlob;
   const today = opts.today ?? todayIso();
   const uploadError = el("p", { id: "up-error", className: "errors", role: "alert" });
+  /** The current error, as a function so it can be shown again in the new language. */
+  let errorMessage: (() => string) | null = null;
+  const renderError = (): void => {
+    uploadError.textContent = errorMessage ? errorMessage() : "";
+  };
+  onLanguageChange(renderError);
   const upload = el("input", { id: "up-file", type: "file", accept: ".yml,.yaml" });
   const body = el("div", { id: "existing-body" });
 
   // The drop zone is a large card around the real file input. After a good upload it shrinks to a compact row.
   const dropZone = el("div", { className: "dropzone card", id: "up-zone" }, [
-    el("h2", { className: "card-head", textContent: "Upload project.yml" }),
-    el("p", { className: "hint", textContent: "Choose the project.yml from your project folder. Nothing is stored in the browser." }),
-    el("label", { htmlFor: "up-file", className: "dropzone-label", textContent: "project.yml" }),
+    translate(el("h2", { className: "card-head" }), "existing.uploadTitle"),
+    translate(el("p", { className: "hint" }), "existing.uploadHint"),
+    translate(el("label", { htmlFor: "up-file", className: "dropzone-label" }), "existing.fileLabel"),
     upload,
   ]);
 
@@ -52,35 +59,37 @@ export function mountExisting(root: HTMLElement, opts: ExistingOptions = {}): vo
     });
   }
 
-  function fail(message: string): void {
-    uploadError.textContent = message;
+  function fail(message: () => string): void {
+    errorMessage = message;
+    renderError();
     body.replaceChildren();
   }
 
   async function load(file: File | undefined): Promise<void> {
-    uploadError.textContent = "";
+    errorMessage = null;
+    renderError();
     if (!file) return;
     // Refuse oversized files before reading them into memory.
     if (file.size > MAX_PROJECT_YAML_BYTES) {
-      fail(TOO_LARGE_MESSAGE);
+      fail(() => errorText("too-large"));
       return;
     }
     let text: string;
     try {
       text = await readFileText(file);
     } catch {
-      fail("The file could not be read. Choose the project.yml again.");
+      fail(() => t("existing.readFail"));
       return;
     }
-    const result = readProjectYaml(text);
+    const result = readProjectYamlCoded(text);
     if (!result.ok) {
-      fail(result.error);
+      fail(() => errorText(result.code, result.params));
       return;
     }
     try {
       show(result.project);
     } catch {
-      fail("This project.yml could not be shown. Check that it came from Nasaq.");
+      fail(() => t("existing.showFail"));
     }
   }
 
@@ -95,5 +104,5 @@ export function mountExisting(root: HTMLElement, opts: ExistingOptions = {}): vo
     void load(dropped[0]);
   });
 
-  root.replaceChildren(el("h2", { className: "section-title", textContent: "Existing project" }), dropZone, uploadError, body);
+  root.replaceChildren(translate(el("h2", { className: "section-title" }), "tab.existing"), dropZone, uploadError, body);
 }

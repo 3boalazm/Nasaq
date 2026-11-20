@@ -4,8 +4,9 @@ import { projectSlug } from "../core/files";
 import { todayIso } from "../core/intake";
 import type { OpenItem } from "../core/status";
 import { SIZES, type Project, type Size } from "../core/types";
-import { el, field, saveBlob, choice, checkedValue, type SaveFn } from "./dom";
-import { SIZE_NAMES } from "./labels";
+import { el, field, saveBlob, choice, checkedValue, wireArrowKeys, type SaveFn } from "./dom";
+import { sizeName } from "./labels";
+import { bind, describeError, onLanguageChange, t, translate } from "./i18n";
 
 export interface RescopeOptions {
   save?: SaveFn;
@@ -31,40 +32,45 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
   const save = opts.save ?? saveBlob;
   const today = opts.today ?? todayIso();
   const errorsEl = el("ul", { className: "errors", id: "rs-errors" });
+  /** Current error messages, as functions so they can be shown again in the new language. */
+  let errorMessages: Array<() => string> = [];
+  const renderErrors = (): void => {
+    errorsEl.replaceChildren(...errorMessages.map((m) => el("li", { textContent: m() })));
+  };
+  onLanguageChange(renderErrors);
 
   // New size: the same selection cards as the wizard. The first size other than the current one is preselected.
   const otherSizes = SIZES.filter((s) => s !== project.size);
   const sizeGroup = el("fieldset", { id: "rs-size", className: "choice-group size-group" }, [
-    el("legend", { textContent: "New size" }),
-    ...otherSizes.map((s, i) =>
+    translate(el("legend", {}), "rescope.newSize"),
+    ...otherSizes.map((s) =>
       choice(
         "rs-size",
         `rs-size-${s}`,
         s,
         [
           el("span", { className: "card-size", textContent: s }),
-          el("span", { className: "card-name", textContent: SIZE_NAMES[s] }),
+          bind2(el("span", { className: "card-name" }), () => sizeName(s)),
           el("span", { className: "check", textContent: "✓" }, []),
         ],
         "size-card compact",
       ),
     ),
   ]);
+  wireArrowKeys(sizeGroup);
   const firstSize = sizeGroup.querySelector<HTMLInputElement>('input[name="rs-size"]');
   if (firstSize) firstSize.checked = true;
   const reasonInput = el("input", { id: "rs-reason", type: "text" });
   const approvedInput = el("input", { id: "rs-approved", type: "text", required: true });
   const dateInput = el("input", { id: "rs-date", type: "date", value: today });
 
-  const mustWarning = el("p", {
-    id: "rs-must-warning",
-    className: "warning",
-    role: "alert",
-    textContent: "You are cutting a must item. Type the reason below. The reason is written to the change record.",
-  });
+  const mustWarning = translate(
+    el("p", { id: "rs-must-warning", className: "warning", role: "alert" }),
+    "rescope.mustWarn",
+  );
   mustWarning.hidden = true;
   const mustReason = el("input", { id: "rs-must-reason", type: "text" });
-  const mustField = field("rs-must-reason", "Reason for cutting a must item", mustReason);
+  const mustField = field("rs-must-reason", "rescope.mustReason", mustReason);
   mustField.hidden = true;
 
   const cutBox = el("div", { id: "rs-cuts", className: "cuts" });
@@ -75,17 +81,20 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
     box.dataset["priority"] = it.priority;
     box.addEventListener("change", updateMustWarning);
     cutCheckboxes.push(box);
-    cutBox.append(
-      el("label", { className: "cut-item", htmlFor: `cut-${it.id}` }, [
-        box,
-        ` ${it.title} (${it.phase}, ${it.priority})`,
-      ]),
-    );
+    const text = el("span", {});
+    bind(() => {
+      text.textContent = t("rescope.cutLabel", {
+        title: it.title,
+        phase: it.phase,
+        priority: t(`dash.priority.${it.priority}`),
+      });
+    });
+    cutBox.append(el("label", { className: "cut-item", htmlFor: `cut-${it.id}` }, [box, " ", text]));
   }
-  if (cutItems.length === 0) cutBox.append(el("p", { className: "hint", textContent: "No open items to cut." }));
+  if (cutItems.length === 0) cutBox.append(translate(el("p", { className: "hint" }), "rescope.noOpen"));
   const cutSection = el("section", { className: "cut-step" }, [
-    el("h3", { textContent: "Cut open items (move down only)" }),
-    el("p", { className: "hint", textContent: "Nice items are listed first. Any open item can be cut." }),
+    translate(el("h3", {}), "rescope.cutTitle"),
+    translate(el("p", { className: "hint" }), "rescope.cutHint"),
     cutBox,
     mustWarning,
     mustField,
@@ -108,9 +117,10 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
   }
   sizeGroup.addEventListener("change", updateDirection);
 
-  const button = el("button", { id: "rs-download", type: "button", className: "primary", textContent: "Download rescope ZIP" });
+  const button = translate(el("button", { id: "rs-download", type: "button", className: "primary" }), "rescope.download");
   button.addEventListener("click", async () => {
-    errorsEl.replaceChildren();
+    errorMessages = [];
+    renderErrors();
     const picked = checkedValue(sizeGroup, "rs-size");
     const newSize = picked as Size;
     const down = picked !== "" && directionOf(project.size, newSize) === "down";
@@ -124,20 +134,30 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
       save(blob, `${projectSlug(project.name)}-rescope-${newSize}.zip`);
       opts.onRescoped(next);
     } catch (err) {
-      errorsEl.replaceChildren(el("li", { textContent: (err as Error).message }));
+      const message = describeError(err);
+      errorMessages = [() => message];
+      renderErrors();
     }
   });
 
   root.replaceChildren(
-    el("h2", { className: "card-head", textContent: "Rescope" }),
-    el("p", { className: "hint", textContent: `Current size: ${project.size}. Choose the new size and a reason. A change record is written to the ZIP's RESCOPE_NOTE.md and to project.yml.` }),
+    translate(el("h2", { className: "card-head" }), "rescope.title"),
+    bind2(el("p", { className: "hint" }), () => t("rescope.hint", { size: project.size })),
     sizeGroup,
-    field("rs-reason", "Reason (required)", reasonInput),
-    field("rs-approved", "Approved by (required)", approvedInput),
-    field("rs-date", "Date of change", dateInput),
+    field("rs-reason", "rescope.reason", reasonInput),
+    field("rs-approved", "rescope.approved", approvedInput),
+    field("rs-date", "rescope.date", dateInput),
     cutSection,
     errorsEl,
     el("div", { className: "actions" }, [button]),
   );
   updateDirection();
+}
+
+/** Keeps a text node's content in step with a function that reads the language. */
+function bind2<N extends HTMLElement>(node: N, text: () => string): N {
+  bind(() => {
+    node.textContent = text();
+  });
+  return node;
 }
