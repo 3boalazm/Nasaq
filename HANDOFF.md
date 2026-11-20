@@ -4,7 +4,36 @@
 
 S5: UI redesign. Branch `arena/7ff7b194-nasaq`, from `main` at `4a23fb0` (S4 merged as PR #5). Pull request: open from this branch, not merged. Not deployed. No further sprint started.
 
-Code commit checked in this revision: `7f0480a` (fresh clone, below). This file is updated in a later commit that only changes docs.
+Code commit checked in the latest revision: `fc3012c` (fresh clone, see "Review fix round" below). This file is updated in a later commit that only changes docs.
+
+## Review fix round (PR #6 review, on `fc3012c`)
+
+The owner's Chrome run found the page had no colours, card backgrounds, borders or visible inputs. Cause, verified in the built output before the fix: `src/ui/tokens.css` was never imported. `main.ts` imported only `style.css`, so the built CSS had 0 custom-property definitions and 109 `var(--…)` uses.
+
+Fixes:
+
+1. **Tokens load first.** `src/ui/main.ts` imports `./tokens.css`, then `./style.css`. The built CSS now defines 23 tokens and uses 113 `var(--…)` names.
+2. **Dist test for tokens** (`scripts/dist-scan.test.ts`, runs after the build): every `var(--name)` in the built CSS is defined there; the built CSS defines `--page`, `--surface`, `--ink` and `--accent`. Negative check: with the import removed, `npm run build` exited 1 (the postbuild scan ran and failed), and the scan reported 2 failing tests (`undefined tokens` and missing `--page, --surface, --ink, --accent`). With the import restored, all pass. So the check would have caught this.
+3. **Input borders.** Text, date, number and textarea fields use `border: 1px solid var(--line)` on `background: var(--surface)`. The focus ring is `outline: 3px solid var(--focus)`. Tested in the built CSS (`scripts/dist-scan.test.ts`) and in the source CSS (`src/ui/layout.test.ts`).
+4. **File input in the drop zone.** The native input stays visible and reachable by keyboard (not hidden, not removed). Only its button is restyled, as a pill (`input[type="file"]::file-selector-button`). The zone keeps its dashed `--line` border on a white card. Tested in `src/ui/buttons.test.ts` and the dist test.
+5. **Download rescope ZIP** is `className: "primary"`, the same pill as Download ZIP. Tested in `src/ui/buttons.test.ts`, which also checks that every action button on the page is a primary or secondary pill (tabs excluded).
+
+### Checks (fresh clone of `fc3012c`, `/tmp/r-final`)
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | exit 0 |
+| `npm test` | exit 0. 27 files, 390 tests passed. |
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0. Built CSS: 23 token definitions, 113 uses. Postbuild dist scan passes. |
+| `npm run test:dist` | exit 0. 14 tests passed. |
+| URLs in `dist/` | 2 distinct, both dependency strings already allowlisted (`rolldown.rs`, `stuk.github.io/jszip`). |
+
+The same commands pass in `/home/user/Nasaq` at `fc3012c`.
+
+### What I still cannot see
+
+I cannot see the page. There is no browser in this sandbox, and browser binaries cannot be downloaded from the allowed hosts. The fixes are verified by the built CSS and by jsdom and dist tests, which check that the rules and tokens exist. They do not show that the page looks right. Colours, spacing, the file input's look, and the rescope button's look still need the browser checks in README "Known limits", at 320, 375 and 1280 px, on this build.
 
 ## What changed
 
