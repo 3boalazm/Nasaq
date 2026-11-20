@@ -39,4 +39,36 @@
 
   /* Motion: short and optional, see prefers-reduced-motion in style.css */
   --ease: 120ms ease-out;
+
+  /* --- Reference pass: depth, mist and gradients. Raw values live here only; polish.css uses var() names. --- */
+  --radius-xl: 28px;
+  --mist:
+    radial-gradient(58rem 38rem at 88% -12%, rgba(159, 220, 185, 0.6), transparent 62%),
+    radial-gradient(46rem 34rem at -12% 18%, rgba(196, 214, 236, 0.6), transparent 60%),
+    radial-gradient(44rem 30rem at 55% 112%, rgba(246, 226, 208, 0.75), transparent 62%);
+  --glass: rgba(255, 255, 255, 0.76);
+  --glass-strong: rgba(255, 255, 255, 0.92);
+  --glass-line: rgba(255, 255, 255, 0.95);
+  --glass-dark: rgba(255, 255, 255, 0.14);
+  --glass-dark-line: rgba(255, 255, 255, 0.28);
+  --on-accent-soft: rgba(255, 255, 255, 0.82);
+  --shadow-float: 0 1px 1px rgba(21, 24, 28, 0.04), 0 14px 34px -10px rgba(15, 77, 46, 0.16),
+    0 36px 70px -28px rgba(21, 24, 28, 0.16);
+  --shadow-lift: 0 2px 2px rgba(21, 24, 28, 0.05), 0 18px 36px -12px rgba(15, 77, 46, 0.26);
+  --shadow-glow: 0 10px 26px -8px rgba(15, 77, 46, 0.55);
+  --grad-accent: linear-gradient(135deg, #0a3520 0%, #0f4d2e 48%, #1b6842 100%);
+  --grad-hero:
+    radial-gradient(36rem 20rem at 92% -30%, rgba(159, 220, 185, 0.42), transparent 60%),
+    radial-gradient(28rem 18rem at 8% 130%, rgba(63, 168, 115, 0.4), transparent 62%),
+    linear-gradient(135deg, #0a3520 0%, #0f4d2e 50%, #17603c 100%);
+  --grad-progress: linear-gradient(90deg, #0f4d2e 0%, #3fa873 62%, #9fdcb9 100%);
+  --grad-progress-rtl: linear-gradient(270deg, #0f4d2e 0%, #3fa873 62%, #9fdcb9 100%);
+  --grad-brand: linear-gradient(140deg, #f6e7da 0%, #fdf5ec 100%);
+  --grad-uiux: linear-gradient(140deg, #ece6f6 0%, #f7f3fd 100%);
+  --grad-dev: linear-gradient(140deg, #e2f2e6 0%, #f3fbf5 100%);
+  --shape-brand: linear-gradient(160deg, #e9a676 0%, #f6dcc6 100%);
+  --shape-uiux: linear-gradient(160deg, #a98fe0 0%, #e3d9f6 100%);
+  --shape-dev: linear-gradient(160deg, #62b884 0%, #d3ecdb 100%);
+  --grad-alert: linear-gradient(140deg, #fbeed2 0%, #fff8e8 100%);
+  --mark: linear-gradient(140deg, #0f4d2e 0%, #3fa873 100%);
 }
