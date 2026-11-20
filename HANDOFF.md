@@ -2,120 +2,140 @@
 
 ## Sprint
 
-S3 — Rescope, status and scope alert. Branch: `arena/8b6adae4-nasaq` (session branch, from `main` at `b78bb50`, which includes S2 merged as PR #3). Status: PR #4 open, not merged, not deployed. This revision answers the review of S3. S4 has not been started.
+S4: hardening and release candidate. Branch `arena/566c2423-nasaq`, from `main` at `6b612e7` (S3 merged as PR #4).
 
-Out of scope (kept): editing phases in the browser, storing projects in the browser, merging the user's edited Markdown.
+Status: pull request open for owner review. Not merged. Not deployed. No further sprint started.
 
-## Review answers applied (this revision)
+Code commit checked: `d5bc80f` (fresh clone). Earlier S4 commit `595dfe3` (before the preview fix). The commit that adds this file only changes docs.
 
-1. **Rescope ZIP file rule (changed).** Every rescope ZIP contains: `project.yml` (replaced), `RESCOPE_NOTE.md` (new), the regenerated entry file `README.md` or `AGENTS.md` (replaced, because it states the size), and every file in `filePlan(track, newSize)` that is not in `filePlan(track, oldSize)`. Results: S→M adds PLAN.md; S→L and M→L add the four L files; L→M adds PROJECT.md and PLAN.md; L→S adds PROJECT.md; M→S adds nothing. For L→M and L→S the note tells the user to carry open items from the frozen risk and test files into the Baseline checklist of the new PROJECT.md. Applied in `newFilesFor`, `rescopeZipFiles` (single source for ZIP and note), and the note templates. Tests now cover all six directions for all three tracks with explicit file lists.
-2. **Inclusive day count.** Confirmed. No change.
-3. **`approvedBy` is required for a rescope.** `rescope()` refuses an empty, blank, or missing value, and its type is now `string`. The page's "Approved by" field is required and says so. It stays optional elsewhere (for example, the initial sizing record keeps `approvedBy: null`).
-4. **`itemsAdded` stays empty in v1.** No change.
-5. **S0 assumptions confirmed.** No change.
-6. **"AD" written out.** The brand templates now say "Art Director" and "the Art Director (the owner) signs off brand decisions". The open question about the meaning of AD was removed. In the dev L phases, the Build item is now "Sprints of up to 5 milestones, one per session". No template mentions doc 26 any more.
+Out of scope (kept): new features, Arabic UI, integrations.
 
 ## Done
 
-Core (pure, no DOM):
+| Milestone | Result |
+| --- | --- |
+| M4.1 Input safety | Done (automated). See details below. |
+| M4.2 No runtime network | Done with one open question: two URLs from dependency code are allowed exactly. See Blockers Q1. |
+| M4.3 Accessibility and layout | Partly done. jsdom and CSS checks pass. Browser checklist NOT run. See the checklist below. |
+| M4.4 Template editing guide | Done. README sections "Editing templates", "Changing the size thresholds". `thresholds.test.ts` reads the bands from the file. |
+| M4.5 Release check | Done for the fresh clone. The nine ZIPs were made by the core code, not by clicking the built page. See Blockers Q3. Pull request left open. |
 
-- `src/core/rescope.ts`:
-  - `rescope(project, newSize, reason, approvedBy, date, options?)` returns a new project with the size changed and one change record appended to `sizeHistory`. It refuses the same size, a blank reason, a missing or blank approver, a date that is not real, cuts when moving up, unknown or non-open items, and a must cut without a typed reason. The must-cut reason is written into the change record's `reason` text.
-  - `newFilesFor(track, from, to)`: the files the user does not have yet (see answer 1).
-  - `renderRescopeNote(project, from)`: the change record, a "Files in this ZIP" table (replace, new, or read), and the instructions for the move.
-  - `rescopeZipFiles(project, from)`: every file in the rescope ZIP, by name. The ZIP and the note both use it.
-- `src/core/zip.ts`: `buildRescopeZip(project, from)` zips `rescopeZipFiles`.
-- `templates/_shared/RESCOPE_NOTE.md`, and the instruction snippets `templates/_shared/rescope/{down-L-M, down-L-S, down-M-S, up}.md`. The snippet is chosen by the move: L→M, L→S, M→S, or up (S→M, S→L, M→L).
-- `src/core/status.ts`: `status(project, today)` and `scopeAlert(project)` (unchanged from the previous revision).
-- `src/core/readProject.ts`: `readProjectYaml(text)` (unchanged).
-- `src/core/render.ts`: `render(template, project, extra?)`.
-- `src/core/plan.ts`: `roleFiles(track)`.
+Also done, as asked:
 
-UI (`src/ui/`):
+- README: new "Use it" section (three steps: `npm ci`, `npm run build`, `npm run preview`). New "Known limits" section listing each browser check not run.
+- `docs/SPRINTS.md` updated to match the build: a "Record (as built)" table of session branches and PRs (S0 to S4); doc 26 and 27 references replaced (not in repo, not used); S3 rescope ZIP rule for six directions; `approvedBy` required for rescope; duration counted inclusively; M4.x accept text updated. Milestone boxes left unticked, as before.
 
-- `app.ts` (two tabs), `existing.ts` (upload, status, alert, rescope), `status.ts`, `rescope.ts` (approver field now required, label "Approved by (required)"), `dom.ts`, `form.ts` (mounts into a tab panel), `style.css`.
+### M4.1 details
 
-Templates:
+- Project name to file name: `projectSlug` in `src/core/files.ts` gives lowercase a-z, 0-9 and "-" only, at most 60 characters. `../`, slashes, Arabic, and HTML all become separators. A name with no usable letters (including all-Arabic) gives `project`. Windows device names (`con`, `nul`, `com1`, …) get the prefix `project-`. The ZIP file name is `{slug}.zip`; the rescope ZIP is `{slug}-rescope-{S|M|L}.zip`. ZIP entry names are fixed and never come from the project name (tested).
+- `project.yml` over 1 MB (1,048,576 bytes, counted in bytes, not characters) is refused before it is read (`MAX_PROJECT_YAML_BYTES` in `thresholds.ts`). Message: "project.yml is larger than 1 MB. …"
+- Not YAML, YAML that is not a mapping, empty file, duplicate keys, alias bombs, NUL bytes: a message, never a throw. `readProjectYaml` also catches any unexpected error and shows it as a message.
+- Unknown fields are an error at every level: top level, phase, item, size history record. Message: `unknown field "owner" in project.yml (phases[0].items[0]). Remove it or fix the spelling.` Before this sprint, unknown fields were silently ignored. No existing test depended on that.
+- Upload: the size is checked before the file is read. A read error or a render error shows a message.
+- HTML in names: every UI write uses `textContent`. The jsdom test uploads a name containing `<b>x</b>` and `<img src=x onerror=…>`; the text shows as text, no `<b>` or `<img>` is created, and no script runs.
+- `innerHTML` search (see Checks): no use in `src/ui` code. The only mention is a comment in `dom.ts`. No justification needed.
 
-- `templates/brand/L/Brand_Roadmap.md`: "Art Director" wording (see answer 6).
-- `templates/dev/L/phases.yml`: Build item replaced (see answer 6).
+### M4.3 checklist (what was checked, and how)
 
-Milestones:
-
-- [x] M3.1 `rescope`: tests for all six directions; refusals for the same size, a blank reason, a missing or blank approver, and a bad date.
-- [x] M3.2 Rescope ZIP: exact file list tested for all six directions and all three tracks; no file the user already has, except the regenerated entry file and project.yml.
-- [x] M3.3 Cut step on a move down: tested on a sample project, including the must-cut reason.
-- [x] M3.4 `status`: tests with a fixed `today`.
-- [x] M3.5 `scopeAlert`: boundary tests at 5/6 and 15/16 deliverables, and at the duration boundaries.
+| Item | How checked | Result |
+| --- | --- | --- |
+| Every input has a label | jsdom: every input, select and textarea on both tabs, before and after an upload, has a non-empty label (`src/ui/safety.test.ts`) | PASS (automated) |
+| Keyboard order follows the form | jsdom: no `tabindex` above 0. Page order is DOM order, which is the visual order (not checked in a browser) | PARTLY (automated); keyboard in a browser NOT run |
+| Visible focus | CSS rule `:focus-visible` gives a 3 px blue outline to inputs, selects, textareas and buttons (`style.css`) | Rule present; seen in a browser NOT run |
+| Text contrast at least 4.5:1 | Computed from the CSS colours for 11 text pairs (`src/ui/contrast.test.ts`). Lowest enabled-text pair: 6.02:1 (active tab). Disabled button was 2.8:1; darkened to `#6e6e75` (5.06:1). Input border 3.43:1 (needs 3:1). | PASS (computed, not seen on screen) |
+| Usable at 375 px width | Not checked. No browser in the sandbox. | NOT RUN |
 
 ## Current state
 
-- Typecheck, all 241 tests, and the build pass on this branch (see Checks run).
-- The six directions produce the ZIP contents listed in answer 1. Checked by tests and by a script that wrote one ZIP per direction (below).
-- Browser checks have not been run (see below).
-- S4 has not been started.
+- All tests pass (302), typecheck passes, build passes (includes the dist scan), fresh clone reproduces the same results.
+- Not run in a browser: see Known limits in README (tab switching, file picker, must-cut warning and approver field on screen, both downloads opened, 375 px and 1280 px layout, keyboard and focus ring in a browser, screen reader).
+- The built page was served with `npm run preview` and returned HTTP 200 for the page and its script.
 
 ## Checks run
 
-Node v22.22.3, npm 10.9.8. All commands from `/home/user/Nasaq` on branch `arena/8b6adae4-nasaq`. Check commands ran without pipes (output went to a file, and the exit code was read from the command).
+Node v22.22.3, npm 10.9.8. Check commands ran without pipes; exit codes were read from the command.
 
-### Earlier in this sprint (before this revision)
+### Final: fresh clone of `d5bc80f` (`/tmp/s4-final`)
 
 | Command | Result |
 | --- | --- |
-| `npm run typecheck` (after the first S3 code) | exit 127: `tsc: not found`. Cause: no `node_modules` on this checkout. |
-| `npm install` | exit 0. `found 0 vulnerabilities`. |
+| `git clone --branch arena/566c2423-nasaq …` | exit 0. Commit `d5bc80f`. |
+| `npm ci` | exit 0. |
+| `npm test` | exit 0. 20 files, 302 tests passed. |
 | `npm run typecheck` | exit 0. |
-| `npm run typecheck` (after UI code) | exit 1 once: `exactOptionalPropertyTypes` in `app.ts`. Fixed. Then exit 0. |
-| `npm test` (first run after the new tests) | exit 1. 3 failed, 199 passed. Two upload tests did not wait for the file read; one status test used a 10-day S project, which really exceeds the S limit. Test setup fixed; assertions unchanged. |
-| `npm test` | exit 0. 16 files, 202 tests. |
-| `npm run build` | exit 0. |
-| Scripted flow (generate → upload → rescope down → upload → rescope up, temp test file, deleted) | exit 0. |
+| `npm run build` | exit 0. `tsc --noEmit`, `vite build` (built in 184 ms), then `postbuild` (`vitest run --config vitest.dist.config.ts`): 8 tests passed. |
+| `npm run test:dist` | exit 0. 8 tests passed. |
+| Nine ZIPs (3 tracks × 3 sizes) written with `buildZip`, then `unzip -tq` | exit 0 for all nine; all tests of the archives OK. |
+| Rescope ZIPs: 6 directions × 3 tracks (18 ZIPs) with `buildRescopeZip` | exit 0. File lists below. |
+| `grep -ril "aboalazm\|payload\|neon\|redesign-v2" templates/dev/L` | exit 1 (no match). |
+| `grep -rn "\bAD\b\|doc 26" templates/` | exit 1 (no match). |
+| `grep -o "https\?://[^\"' )]*" -r dist` | exit 0. Two hits, both in code, both in the allowlist (Blockers Q1): `https://rolldown.rs/in-depth/bundling-cjs#require-external-modules` and `https://stuk.github.io/jszip/documentation/howto/read_zip.html`. No other URL. |
+| `grep -rn "innerHTML" src/ui --include=*.ts \| grep -v "\.test\.ts"` | Only `src/ui/dom.ts:1`, a comment ("without innerHTML"). No use. |
+| `grep -rn "insertAdjacentHTML\|outerHTML\|document.write\|eval(\|new Function" src scripts` | Only `outerHTML` read inside a test message. No HTML sink. |
+| `grep -rn "https\?://" src templates index.html` (excluding tests) | exit 1 (no match). |
 
-### This revision
+ZIP file lists, final clone (all nine plus `unzip -Z1`):
+
+- brand L: `README.md project.yml Brand_Roadmap.md Brand_Risks.md Application_Tests.md Handoff.md`
+- brand M: `README.md project.yml PROJECT.md PLAN.md`
+- brand S: `README.md project.yml PROJECT.md`
+- dev L: `AGENTS.md project.yml Implementation.md Security_issues.md Test_scenarios.md Handoff.md`
+- dev M: `AGENTS.md project.yml PROJECT.md PLAN.md`
+- dev S: `AGENTS.md project.yml PROJECT.md`
+- uiux L: `README.md project.yml UX_Roadmap.md UX_Risks.md UX_Tests.md Handoff.md`
+- uiux M: `README.md project.yml PROJECT.md PLAN.md`
+- uiux S: `README.md project.yml PROJECT.md`
+
+Rescope ZIPs, final clone (each has `project.yml`, `RESCOPE_NOTE.md`, the entry file, and the new files only):
+
+- S→M adds `PLAN.md`; S→L and M→L add the four L files; L→M adds `PROJECT.md` and `PLAN.md`; L→S adds `PROJECT.md`; M→S adds nothing.
+- All three tracks match this rule (for example `brand-L-to-M`: `project.yml RESCOPE_NOTE.md README.md PROJECT.md PLAN.md`; `dev-M-to-S`: `project.yml RESCOPE_NOTE.md AGENTS.md`).
+
+### Workspace, commit `595dfe3` (before the preview fix)
 
 | Command | Result |
 | --- | --- |
-| `npm run typecheck` (after the rule and approver changes) | exit 1: 23 errors, 22 of them `null` passed as the approver in tests, and one snippet type that did not include `down-L-S`. Fixed the snippet type; changed the test calls to a real approver name (the type now requires a string, so `null` is caught at compile time). |
-| `npm test` (first run) | exit 1. 4 failed, 236 passed. Three UI tests did not fill in the now-required approver field, and one `newFilesFor` expectation listed the L files alphabetically while the function returns them in plan order. Test setup and expected order fixed; no assertion changed. |
-| `npm run typecheck` (final) | exit 0. |
-| `npm test` (final) | exit 0. 16 files, 241 tests passed. |
-| `npm run build` (final) | exit 0. `tsc --noEmit` then `vite build`. |
-| `grep -ril "aboalazm\|payload\|neon\|redesign-v2" templates/dev/L` | exit 1, no output: no match (M2.2 still holds). |
-| `grep -rn "\bAD\b\|doc 26" templates/` | exit 1, no output: no match. |
-| Temp script `src/core/tmp-dirs.test.ts` (writes one rescope ZIP per direction, brand project, then deleted) | exit 0. |
-| `unzip -Z1` on each direction's ZIP | S-to-M: `project.yml RESCOPE_NOTE.md README.md PLAN.md`. S-to-L: `project.yml RESCOPE_NOTE.md README.md Brand_Roadmap.md Brand_Risks.md Application_Tests.md Handoff.md`. M-to-L: same as S-to-L. L-to-M: `project.yml RESCOPE_NOTE.md README.md PROJECT.md PLAN.md`. L-to-S: `project.yml RESCOPE_NOTE.md README.md PROJECT.md`. M-to-S: `project.yml RESCOPE_NOTE.md README.md`. |
-| `unzip` and `cat` of the L-to-S note | The change record shows the approver and "L → S". The file table says replace `project.yml` and `README.md`, and that `RESCOPE_NOTE.md` and `PROJECT.md` are new. The instructions freeze `Brand_Risks.md` and `Application_Tests.md` and carry open items into the Baseline checklist of the new PROJECT.md. No `{{` in the output. |
+| `npm ci` | exit 0 |
+| `npm run typecheck` | exit 0 (after the M4.1 changes; rerun after all tests were added: exit 0) |
+| `npm test` | exit 0. 20 files, 302 tests. |
+| `npm run build` | exit 0 |
 
-Browser checks NOT run (no browser is installed in the sandbox):
+### Preview check (`npm run preview`, README step 3)
 
-- Opening the page and switching between the New project and Existing project tabs.
-- Choosing a real `project.yml` with the file picker. The upload path is covered by a jsdom test.
-- How the must-cut warning and the required approver field look on screen.
-- Clicking Download rescope ZIP in a real browser and opening the file. The ZIP contents are covered by tests and the script run above.
-- Layout and readable defaults at phone and desktop widths, and keyboard use of the tabs.
+- First try: `vite preview` returned a warning, "Port 4173 REJECTS the user's preview host … HTTP 403". Fixed by `preview.allowedHosts: [".e2b.app"]` and `host: "0.0.0.0"` in `vite.config.ts` (commit `d5bc80f`).
+- After the fix: no warning. `GET /` with the sandbox host header returned 200. The script `/assets/index-Bx9H5tb4.js` returned 200 (262,631 bytes).
 
-These should be run before merge.
+### Failures during this sprint (all fixed; no assertion weakened)
 
-## Manual run (described; the core parts were run by script above)
+1. `input-safety.test.ts`: one test read `README.md` for a dev project, whose entry file is `AGENTS.md`. Test fixed.
+2. Contrast test: Vitest stubbed the CSS imports (`?raw`, `?inline`) as empty strings. Changed to read `style.css` with Node's `fs` through `process.getBuiltinModule`, which needs no new package.
+3. Contrast helper: `#fff` (3 digits) was read as NaN. Helper now expands 3-digit colours.
+4. Contrast, real finding: the disabled download button (white on `#9a9aa0`) is 2.8:1. Disabled controls are exempt from WCAG, but this sprint asks for 4.5:1. Background darkened to `#6e6e75` (5.06:1).
+5. Contrast test string match: CSS writes `#fff`, the test wrote `#ffffff`. Test corrected to the CSS form.
 
-1. **Generate.** On New project, make a brand project at size L and download the ZIP. Keep its `project.yml`.
-2. **Upload.** On Existing project, choose that `project.yml`. The status card shows size L and the open items. There is no scope alert for L.
-3. **Rescope down.** Choose M. Reason: "Client cut the workshop". Approved by: a name (required). Date: today. Tick a must item: the warning appears, and you type the reason. Download. The ZIP contains `project.yml`, `RESCOPE_NOTE.md`, `README.md`, `PROJECT.md`, and `PLAN.md`. Follow the note: freeze the risk and test files, and carry their open items into the Baseline checklist.
-4. **Upload again.** Choose the new `project.yml`. The status shows size M, the cut item as cut, and two history rows.
-5. **Rescope up.** Choose L. Reason and approver required. Download. The ZIP contains `project.yml`, `RESCOPE_NOTE.md`, `README.md`, and the four Brand L files.
+### Development runs (before the final clone)
 
-Steps 1 to 5 were run as a script (see Checks run), not in a browser.
+- Full suite after the M4.1 core changes: 241 existing tests still passed; then 61 new tests were added (302 total).
 
 ## Blockers
 
-None open from the review. The review answers above close the earlier questions. Two items remain for your awareness:
+Open questions. Owner decision needed. None of these stops the pull request from being reviewed.
 
-1. **Assumption to note:** the inclusive count is used for the S and M duration limits (confirmed in answer 2).
-2. **Carried from S0 (confirmed in answer 5):** non-whole numbers rejected; missing `approvedBy` in the data model parses as null; `deadline` may be null and is not checked against `startDate` in the data model (the form warns only); invalid `suggestSize` input throws `RangeError`.
+1. **M4.2 is not met as written, for two URLs in dependency code.** The rule says the built page may contain `http://` or `https://` only in comments or license text. Two URLs are in code strings: the bundler's helper error text (`rolldown.rs`) and jszip's error hint (`stuk.github.io/jszip`). `scripts/dist-scan.test.ts` allows exactly these two, each must appear exactly once, and any other URL fails the build. Options:
+   - (a) Keep the exact allowlist (current). Recommended: nothing is fetched; these are error texts.
+   - (b) Patch the dependency output to remove the strings. This is a build change that alters third-party code.
+   - (c) Limit the rule to the page's own code and drop dependency text from the scan.
+2. **M4.3 browser checklist not run.** The sandbox has no browser. Items not run: keyboard in a browser, focus ring, 375 px layout, screen reader. The owner should run them before release.
+3. **M4.5 "generate all 9 ZIPs from the built page" was done from the core code.** Clicking the built page needs a browser. The nine ZIPs use the same `buildZip` function the page calls. Is that acceptable for the release candidate, or should the browser run be done first?
+4. **1 MB limit.** Set to 1,048,576 bytes (1 MiB), counted in bytes. Is that the meaning of "1 MB" you want? If you prefer 1,000,000 bytes, change `MAX_PROJECT_YAML_BYTES` in `src/core/thresholds.ts`.
+5. **Preview host in `vite.config.ts`.** `preview.allowedHosts: [".e2b.app"]` is needed for the sandbox preview link. Keep it for the review, or remove it before any real deployment.
+6. **Unknown fields are now an error** (previously silently ignored). Projects made by this page are unaffected. A hand-edited `project.yml` with an extra field will now be refused with the field name.
+
+Carried from S3 (still closed): the L→M and L→S carry-over rule, the inclusive day count, `approvedBy` required for rescope, `itemsAdded` empty in v1, S0 assumptions, and the "Art Director" and dev L wording.
 
 ## Next
 
-- Review and merge only if the user approves. Do not deploy.
-- Run the browser checks listed above and record the results here.
-- S4 has not been started. Do not start it until S3 is reviewed.
+- Owner review of PR #4 and this S4 pull request. Per the sprint, a second model should review S3 and S4 (rescope logic and input safety) before merging.
+- Run the browser checklist (README "Known limits"). Record the results here.
+- Answer Blockers 1 to 6.
+- Do not merge or deploy until the owner asks.
