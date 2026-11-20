@@ -25,7 +25,7 @@ npm run build      # typecheck + vite build
 
 ## Docs
 
-- `docs/SPEC.md` and `docs/SPRINTS.md`: not yet in the repo (see `HANDOFF.md`, Blockers).
+- `docs/SPEC.md`: product spec. `docs/SPRINTS.md`: sprint plan (S0 to S4).
 - `HANDOFF.md`: current sprint state, checks, and open questions.
 
 ## Status

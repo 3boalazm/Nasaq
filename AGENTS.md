@@ -4,8 +4,8 @@ Nasaq is a static Vite + TypeScript app with no backend.
 
 ## Source of truth
 
-- `docs/SPEC.md` is the product spec. It is **not yet in the repo**; the sprint plan says it should be added. Until it is, read `HANDOFF.md` Blockers.
-- `docs/SPRINTS.md` is the sprint plan. It is **not yet in the repo**. Once it is, read it from the repo.
+- `docs/SPEC.md` is the product spec ("the spec" in the sprint plan). Sections 3 to 6 and 8 are the source of truth.
+- `docs/SPRINTS.md` is the sprint plan. Do only the sprint you were given.
 - From S1 on, read `HANDOFF.md` first.
 
 ## Rules

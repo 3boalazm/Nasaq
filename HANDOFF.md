@@ -13,7 +13,7 @@ S0 — Scaffold and core engine (no UI). Branch: `arena/b062b4d0-nasaq` (session
 - `src/core/plan.ts` (M0.4): `filePlan(track, size)`. Output order: entry file, `project.yml`, then size files. L = entry + `project.yml` + the four track files (no `PROJECT.md`/`PLAN.md`), as confirmed in review.
 - `src/core/projectYaml.ts` (M0.5 + schema): `toYaml` / `fromYaml`. Rejects unknown track or size, missing name, missing `startDate`, and any `startDate`, `deadline`, or `ChangeRecord.date` that is not a real `YYYY-MM-DD` date. Each error names the field. Missing lists parse as empty. Missing `approvedBy` parses as null.
 - Tests: `src/core/size.test.ts` (25), `src/core/projectYaml.test.ts` (15), `src/core/plan.test.ts` (11). Total 51. Size tests take every limit from `thresholds.ts`.
-- Docs: `README.md`, `AGENTS.md` (points to `docs/SPEC.md` and `docs/SPRINTS.md`, which are not in the repo yet), this file.
+- Docs: `README.md`, `AGENTS.md` (points to `docs/SPEC.md` and `docs/SPRINTS.md`), `docs/SPEC.md`, `docs/SPRINTS.md`, this file.
 
 Milestones:
 
@@ -25,7 +25,7 @@ Milestones:
 
 Review items:
 
-1. **Spec and sprint files added to `docs/`: NOT DONE.** See Blockers 1.
+1. **Spec and sprint files added to `docs/`: DONE.** The two files had been pushed to this branch by Mustafa Aboalazm (commits `2f46f0c`, `3554542`) under their long names. They are now `docs/SPEC.md` (from `Project_Flow_System_Research_and_Spec_2026-11-20.md`) and `docs/SPRINTS.md` (from `Project_Flow_System_Arena_Sprints_2026-11-20.md`). I rebased this work onto those commits and renamed them with `git mv`. `docs/123` (an empty file from commit `2f46f0c`) was left as is.
 2. Package renamed to `nasaq`; name `Nasaq` used in `README.md`, `AGENTS.md`, `index.html`. The `main.ts` placeholder text also says `Nasaq`.
 3. `src/core/thresholds.ts` created (values as given in review).
 4. M0.3 implemented (see above).
@@ -34,7 +34,8 @@ Review items:
 
 ## Current state
 
-- S0 review items 2–6 are done. Item 1 (spec and sprint files) is blocked.
+- All six S0 review items are done.
+- The spec §4 table was checked against `thresholds.ts`. Duration, deliverables, risk and unknowns match exactly. Approvers has a wording issue (Blocker 1).
 - Test fixtures in `projectYaml.test.ts` gained the new required fields (`startDate`, and the three `ChangeRecord` fields). No assertion was removed or weakened.
 - `startDate` is required and must be a real date. `deadline` is optional (`null` allowed) and must be a real date when set. The code does not check that `deadline` is after `startDate`. That check is not in the sprint text, so it is not implemented.
 - `Item.status` values: `todo | doing | done | cut`. Status lives on the item (confirmed in review).
@@ -51,32 +52,33 @@ Node v22.22.3, npm 10.9.8. All commands run from `/home/user/Nasaq` on branch `a
 | `npm test` | exit 0. 3 files, 51 tests passed (projectYaml 15, size 25, plan 11) |
 | `npm run build` | exit 0. `tsc --noEmit` then `vite build`, output in `dist/` (gitignored) |
 | `grep -c '"name": "nasaq"' package-lock.json` | 2 (root package and root entry) |
+| Re-run of all four commands above after the rebase and rename | Same results: install 0, typecheck 0, test 0 (51 passed), build 0 |
 
-Spec and sprint lookup (review item 1), real results:
+Spec and sprint lookup (review item 1), real results. The files were then found on the branch:
 
 | Command or call | Result |
 | --- | --- |
-| `ls` and `find` over `/home/user`, `/home/user/Nasaq`, and `/` for spec/sprint files | No match. The repo has only the S0 files. |
-| Google Drive `search_files`, query `name contains 'spec' or name contains 'sprint' or ...` | Returned 50 unrelated files (zip archives, exports). No spec or sprint file. |
-| Google Drive `search_files`, query `name contains 'Flow' or ... fullText contains 'Project Flow System'` | Found `FLOW.md`, `FLOW (1).md`, `REV7_HANDOFF.md`. `FLOW.md` was read: it is an unrelated "Code&Canvas AI Delivery Framework" document. The others were not read. |
-| Google Drive `search_files`, query `fullText contains 'suggestSize' or fullText contains 'project.yml' or ...` | No new match. |
-| Google Docs connector | No search tool; only create/read/edit by ID. Not searched. |
-| Linear connector | Listed tools. No document search. Not searched. |
+| `ls` and `find` over `/home/user`, `/home/user/Nasaq`, and `/` for spec/sprint files | No match in the workspace. |
+| Google Drive `search_files` (name and fullText queries) | No spec or sprint file found. Not the source of the files. |
+| `git fetch origin arena/b062b4d0-nasaq` | Remote had 2 new commits (`2f46f0c`, `3554542`) that added `docs/` files. This is where the spec and sprints were. |
+| `git show origin/...:docs/Project_Flow_System_Research_and_Spec_2026-11-20.md` | Read in full. Used for the §4 check. |
+| `git show origin/...:docs/Project_Flow_System_Arena_Sprints_2026-11-20.md` | Read in full. S0 text matches the sprint text used for this work. |
+| `git push` (first attempt) | Rejected as non-fast-forward because of the remote commits above. Nothing was force-pushed. Resolved by rebasing. |
+| `git rebase origin/arena/b062b4d0-nasaq` | Successful, no conflicts. |
 
 Not run: browser or UI checks (no UI in S0).
 
 ## Blockers
 
-1. **Spec and sprint files were not received.** The message says "Add the attached spec and sprint files to the repo as `docs/SPEC.md` and `docs/SPRINTS.md`". They are not in the message, the repo, or the workspace. Drive searches did not find them. Please attach them again, or share the Drive file IDs or paste the text. I did not write these files from memory. Once they are here, I will add them and update AGENTS.md to link to them.
-2. **Spec §3–6 and §8 are not available,** so I could not check the code against them beyond the sprint text and the review message. Please confirm this is acceptable for S0 or send the sections.
-3. **Assumptions to confirm** (implemented, not yet approved):
+1. **Spec §4 approvers row is ambiguous.** The spec lists "one client contact" in both the S row ("you only, or one client contact") and the M row ("one client contact"). The review rule is by count: 1 = S, 2 = M, 3+ = L. I implemented the review rule. If the spec wording is meant to be the rule, the count mapping needs to change. Please confirm which one applies.
+2. **Assumptions to confirm** (implemented, not yet approved):
    - Non-whole numbers for duration, deliverables, or approvers are rejected (for example `7.5`). Otherwise `7.5` would silently fall between the S and M bands.
    - Missing `approvedBy` parses as `null`. Missing `itemsCut` / `itemsAdded` parse as `[]`.
-   - `deadline` is allowed to be `null`. Its order relative to `startDate` is not checked.
-4. **Shape of `suggestSize` error handling:** invalid input throws. The sprint did not say whether to throw or return an error value.
+   - `deadline` is allowed to be `null`. Its order relative to `startDate` is not checked (the spec does not say to check it).
+   - Invalid input to `suggestSize` throws a `RangeError`. The sprint text did not say whether to throw or return an error value.
+3. **Stray file on the branch:** `docs/123` (empty, from commit `2f46f0c`). Not removed. Please confirm whether to delete it.
 
 ## Next
 
-- Resolve Blocker 1 (and 2 if needed). Then add `docs/SPEC.md` and `docs/SPRINTS.md`, and link them from AGENTS.md.
-- Confirm the assumptions in Blocker 3.
+- Confirm Blocker 1 (approvers rule), Blocker 2 (assumptions), and Blocker 3 (`docs/123`).
 - S1 has not been started. Do not start it until this sprint is reviewed.
