@@ -25,6 +25,16 @@ const fill = (over: Partial<Record<string, string>> = {}): void => {
 };
 
 const btn = (): HTMLButtonElement => document.getElementById("f-download") as HTMLButtonElement;
+
+/** Leaves a field, as a user does by tabbing away. */
+const blur = (id: string): void => {
+  (document.getElementById(id) as HTMLElement).dispatchEvent(new Event("focusout", { bubbles: true }));
+};
+/** The visible error line for a field, or "" when hidden. */
+const errorOf = (id: string): string => {
+  const line = document.getElementById(`err-${id}`);
+  return line && !line.hidden ? line.textContent ?? "" : "";
+};
 const sizeSel = (): HTMLSelectElement => document.getElementById("f-size") as HTMLSelectElement;
 const text = (id: string): string => document.getElementById(id)?.textContent ?? "";
 
@@ -39,12 +49,13 @@ describe("intake form", () => {
     mountIntakeForm(root, save);
   });
 
-  it("starts with start date set to today and download disabled", () => {
+  it("starts with start date set to today; download enabled; no error shown", () => {
     const now = new Date();
     const pad = (n: number): string => String(n).padStart(2, "0");
     const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     expect((document.getElementById("f-start") as HTMLInputElement).value).toBe(today);
-    expect(btn().disabled).toBe(true);
+    expect(btn().disabled).toBe(false);
+    expect(document.querySelectorAll(".field-error:not([hidden])").length).toBe(0);
   });
 
   it("shows a suggested size with the deciding answers and a duration", () => {
@@ -90,10 +101,54 @@ describe("intake form", () => {
     expect(sizeSel().value).toBe("S");
   });
 
-  it("lists validation errors and keeps download disabled", () => {
+  it("an error is shown only after its field is touched", () => {
     fill({ "f-name": "" });
-    expect(text("f-errors")).toContain("Enter a project name.");
-    expect(btn().disabled).toBe(true);
+    expect(errorOf("f-name")).toBe("");
+    blur("f-name");
+    expect(errorOf("f-name")).toBe("Enter a project name.");
+    expect(document.getElementById("f-name")?.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("leaving a different field does not reveal an untouched invalid field", () => {
+    fill({ "f-name": "" });
+    blur("f-deadline");
+    expect(errorOf("f-name")).toBe("");
+    expect(errorOf("f-deadline")).toBe("");
+  });
+
+  it("the error goes away once the field is fixed", () => {
+    fill({ "f-name": "" });
+    blur("f-name");
+    setVal("f-name", "Fixed");
+    expect(errorOf("f-name")).toBe("");
+    expect(document.getElementById("f-name")?.getAttribute("aria-invalid")).toBe("false");
+  });
+
+  it("the first Download click reveals every error, focuses the first invalid field, and saves nothing", () => {
+    fill({ "f-name": "", "f-deadline": "", "f-deliverables": "" });
+    expect(btn().disabled).toBe(false);
+    expect(errorOf("f-name")).toBe("");
+    btn().click();
+    expect(errorOf("f-name")).toBe("Enter a project name.");
+    expect(errorOf("f-deadline")).toBe("Enter a deadline.");
+    expect(errorOf("f-deliverables")).toBe("Deliverables must be a whole number, 1 or more.");
+    expect(document.activeElement?.id).toBe("f-name");
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("after the reveal, every error is live: fixing one clears only that one", () => {
+    fill({ "f-name": "", "f-deadline": "" });
+    btn().click();
+    setVal("f-deadline", "2026-11-25");
+    expect(errorOf("f-deadline")).toBe("");
+    expect(errorOf("f-name")).toBe("Enter a project name.");
+  });
+
+  it("a click with valid answers saves, and reveals nothing", async () => {
+    fill({ "f-approver": "Approver A" });
+    btn().click();
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(document.querySelectorAll(".field-error:not([hidden])").length).toBe(0);
   });
 
   it("warns when the deadline is before the start date", () => {

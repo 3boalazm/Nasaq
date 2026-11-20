@@ -9,6 +9,11 @@ export interface OpenItem {
   priority: Item["priority"];
 }
 
+/** A size history record with cut item ids shown as "title (id)". */
+export interface HistoryRow extends ChangeRecord {
+  itemsCutLabels: string[];
+}
+
 export interface ProjectStatus {
   name: string;
   track: Project["track"];
@@ -16,6 +21,8 @@ export interface ProjectStatus {
   startDate: string;
   deadline: string | null;
   sizeHistory: ChangeRecord[];
+  /** The size history with cut items labelled "title (id)". */
+  historyRows: HistoryRow[];
   /** Name of the first phase with an open item, or null when none is open. */
   currentPhase: string | null;
   /** Items not cut: the deliverables count (spec and S3 note). */
@@ -43,6 +50,21 @@ const NEXT_SIZE: Record<Size, Size> = { S: "M", M: "L", L: "L" };
 
 function isOpen(item: Item): boolean {
   return item.status === "todo" || item.status === "doing";
+}
+
+/** "title (id)" for an item of the project, or the bare id when the project has no such item. */
+export function describeItem(project: Project, id: string): string {
+  for (const ph of project.phases) {
+    for (const it of ph.items) {
+      if (it.id === id) return `${it.title} (${id})`;
+    }
+  }
+  return id;
+}
+
+/** Labels for a list of item ids, in the same order. */
+export function describeItems(project: Project, ids: string[]): string[] {
+  return ids.map((id) => describeItem(project, id));
 }
 
 export function deliverableCount(project: Project): number {
@@ -75,6 +97,7 @@ export function status(project: Project, today: string): ProjectStatus {
     startDate: project.startDate,
     deadline: project.deadline,
     sizeHistory: project.sizeHistory,
+    historyRows: project.sizeHistory.map((c) => ({ ...c, itemsCutLabels: describeItems(project, c.itemsCut) })),
     currentPhase,
     deliverables: deliverableCount(project),
     openMust,

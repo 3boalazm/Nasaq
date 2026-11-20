@@ -1,3 +1,10 @@
+/* Every box counts its padding and border inside its width, so a field never exceeds its column. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: #1d1d1f;
@@ -7,9 +14,13 @@
 
 body {
   margin: 0;
+  /* Long words (a project name with no spaces, a long path) wrap instead of pushing the page wider. */
+  overflow-wrap: anywhere;
 }
 
 #app {
+  width: 100%;
+  min-width: 0;
   max-width: 40rem;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
@@ -27,21 +38,28 @@ h1 {
 
 .intake {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  min-width: 0;
 }
 
 .field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .field label {
   font-weight: 600;
 }
 
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   font: inherit;
   padding: 0.5rem 0.6rem;
   border: 1px solid #8a8a90;
@@ -63,9 +81,17 @@ button:focus-visible {
   margin: 0;
 }
 
+.field-error {
+  margin: 0;
+  color: #a51d2d;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .result {
   display: grid;
   gap: 0.5rem;
+  min-width: 0;
   padding: 1rem;
   border: 1px solid #c8c8cc;
   border-radius: 8px;
@@ -100,7 +126,7 @@ button:focus-visible {
 }
 
 .actions button:disabled {
-  background: #9a9aa0;
+  background: #6e6e75;
   cursor: not-allowed;
 }
 
@@ -110,6 +136,7 @@ button:focus-visible {
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.25rem;
   border-bottom: 1px solid #c8c8cc;
@@ -138,7 +165,7 @@ section[role="tabpanel"] h2 {
 
 .status {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 0.35rem 1rem;
   margin: 0 0 1rem;
   padding: 1rem;
@@ -198,4 +225,9 @@ section[role="tabpanel"] h2 {
 
 #up-file {
   padding: 0.4rem 0;
+}
+
+.table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
 }

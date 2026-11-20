@@ -1,4 +1,5 @@
-import { readProjectYaml } from "../core/readProject";
+import { readProjectYaml, TOO_LARGE_MESSAGE } from "../core/readProject";
+import { MAX_PROJECT_YAML_BYTES } from "../core/thresholds";
 import { status, scopeAlert } from "../core/status";
 import { todayIso } from "../core/intake";
 import type { Project } from "../core/types";
@@ -43,17 +44,37 @@ export function mountExisting(root: HTMLElement, opts: ExistingOptions = {}): vo
     });
   }
 
+  function fail(message: string): void {
+    uploadError.textContent = message;
+    body.replaceChildren();
+  }
+
   upload.addEventListener("change", async () => {
     uploadError.textContent = "";
     const file = upload.files?.[0];
     if (!file) return;
-    const result = readProjectYaml(await readFileText(file));
-    if (!result.ok) {
-      uploadError.textContent = result.error;
-      body.replaceChildren();
+    // Refuse oversized files before reading them into memory.
+    if (file.size > MAX_PROJECT_YAML_BYTES) {
+      fail(TOO_LARGE_MESSAGE);
       return;
     }
-    show(result.project);
+    let text: string;
+    try {
+      text = await readFileText(file);
+    } catch {
+      fail("The file could not be read. Choose the project.yml again.");
+      return;
+    }
+    const result = readProjectYaml(text);
+    if (!result.ok) {
+      fail(result.error);
+      return;
+    }
+    try {
+      show(result.project);
+    } catch {
+      fail("This project.yml could not be shown. Check that it came from Nasaq.");
+    }
   });
 
   root.replaceChildren(

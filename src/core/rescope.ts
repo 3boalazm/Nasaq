@@ -1,3 +1,4 @@
+import { describeItems } from "./status";
 import { ENTRY_FILE, PROJECT_YAML, filePlan, roleFiles } from "./plan";
 import { render } from "./render";
 import { ENTRY_TEMPLATE, RESCOPE_NOTE_TEMPLATE, fileTemplate, rescopeSnippet } from "./templates";
@@ -123,6 +124,8 @@ export function renderRescopeNote(project: Project, from: Size): string {
   const change = project.sizeHistory[project.sizeHistory.length - 1];
   if (!change || change.toSize !== project.size) throw new Error("the last change record does not match the project size");
   const roles = roleFiles(project.track);
+  // Markdown table cells: a "|" in a title would split the cell, so escape it.
+  const cutLabels = describeItems(project, change.itemsCut).map((l) => l.replace(/\|/g, "\\|"));
   const extra: Record<string, string> = {
     changeDate: change.date,
     fromSize: change.fromSize ?? "-",
@@ -130,14 +133,14 @@ export function renderRescopeNote(project: Project, from: Size): string {
     direction: directionOf(from, project.size) === "down" ? "Going down" : "Going up",
     reason: change.reason.replace(/\|/g, "\\|"),
     approvedBy: change.approvedBy ?? "not recorded",
-    itemsCut: change.itemsCut.length ? change.itemsCut.join(", ") : "none",
+    itemsCut: cutLabels.length ? cutLabels.join(", ") : "none",
     itemsAdded: change.itemsAdded.length ? change.itemsAdded.join(", ") : "none",
     fileList: fileRows(project.track, from, project.size).join("\n"),
     roadmapFile: roles.roadmap,
     riskFile: roles.risk,
     testFile: roles.test,
-    cutNotice: change.itemsCut.length
-      ? `Tell the client in writing when this change cuts something they expected. This change cuts: ${change.itemsCut.join(", ")}.`
+    cutNotice: cutLabels.length
+      ? `Tell the client in writing when this change cuts something they expected. This change cuts: ${cutLabels.join(", ")}.`
       : "No items were cut in this change.",
     instructions: "",
   };

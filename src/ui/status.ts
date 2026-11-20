@@ -46,22 +46,24 @@ export function mountStatus(root: HTMLElement, s: ProjectStatus, alert: ScopeAle
   const msg = alertMessage(alert);
   if (msg) children.push(el("p", { id: "scope-alert", className: "warning", role: "alert", textContent: msg }));
 
-  if (s.sizeHistory.length > 0) {
-    const rows = s.sizeHistory.map((c) =>
+  if (s.historyRows.length > 0) {
+    const rows = s.historyRows.map((c) =>
       el("tr", {}, [
         el("td", { textContent: c.date }),
         el("td", { textContent: `${c.fromSize ?? "-"} → ${c.toSize}` }),
         el("td", { textContent: c.reason }),
+        el("td", { textContent: c.itemsCutLabels.length ? c.itemsCutLabels.join("; ") : "none" }),
         el("td", { textContent: c.approvedBy ?? "-" }),
       ]),
     );
-    children.push(
-      el("h3", { textContent: "Size history" }),
-      el("table", { className: "history" }, [
-        el("thead", {}, [el("tr", {}, ["Date", "From → to", "Reason", "Approved by"].map((h) => el("th", { textContent: h })))]),
-        el("tbody", {}, rows),
+    const table = el("table", { className: "history" }, [
+      el("thead", {}, [
+        el("tr", {}, ["Date", "From → to", "Reason", "Items cut", "Approved by"].map((h) => el("th", { textContent: h }))),
       ]),
-    );
+      el("tbody", {}, rows),
+    ]);
+    // Wide tables scroll inside their own box, so the page itself never grows past the screen.
+    children.push(el("h3", { textContent: "Size history" }), el("div", { className: "table-wrap" }, [table]));
   }
   root.replaceChildren(...children);
 }

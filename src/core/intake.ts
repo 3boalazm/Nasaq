@@ -47,18 +47,37 @@ export function parseOutOfScope(text: string): string[] {
 
 const isPositiveInt = (n: number): boolean => Number.isInteger(n) && n >= 1;
 
-/** Human-readable problems with the answers. Empty when the answers are usable. */
-export function validateAnswers(a: IntakeAnswers): string[] {
-  const errors: string[] = [];
-  if (a.name.trim() === "") errors.push("Enter a project name.");
-  if (!(TRACKS as readonly string[]).includes(a.track)) errors.push("Choose a track.");
-  if (!isRealIsoDate(a.startDate)) errors.push("Enter a start date.");
-  if (!isRealIsoDate(a.deadline)) errors.push("Enter a deadline.");
-  if (!isPositiveInt(a.deliverables)) errors.push("Deliverables must be a whole number, 1 or more.");
-  if (!isPositiveInt(a.approvers)) errors.push("Approvers must be a whole number, 1 or more.");
-  if (!(RISK_LEVELS as readonly string[]).includes(a.risk)) errors.push("Choose a risk level.");
-  if (!(UNKNOWNS_LEVELS as readonly string[]).includes(a.unknowns)) errors.push("Choose an unknowns level.");
+/** The intake fields that can be invalid, in form order. */
+export const INTAKE_FIELDS = [
+  "name",
+  "track",
+  "startDate",
+  "deadline",
+  "deliverables",
+  "approvers",
+  "risk",
+  "unknowns",
+] as const;
+export type IntakeField = (typeof INTAKE_FIELDS)[number];
+
+/** One message per invalid field. Valid fields are absent from the result. */
+export function fieldErrors(a: IntakeAnswers): Partial<Record<IntakeField, string>> {
+  const errors: Partial<Record<IntakeField, string>> = {};
+  if (a.name.trim() === "") errors.name = "Enter a project name.";
+  if (!(TRACKS as readonly string[]).includes(a.track)) errors.track = "Choose a track.";
+  if (!isRealIsoDate(a.startDate)) errors.startDate = "Enter a start date.";
+  if (!isRealIsoDate(a.deadline)) errors.deadline = "Enter a deadline.";
+  if (!isPositiveInt(a.deliverables)) errors.deliverables = "Deliverables must be a whole number, 1 or more.";
+  if (!isPositiveInt(a.approvers)) errors.approvers = "Approvers must be a whole number, 1 or more.";
+  if (!(RISK_LEVELS as readonly string[]).includes(a.risk)) errors.risk = "Choose a risk level.";
+  if (!(UNKNOWNS_LEVELS as readonly string[]).includes(a.unknowns)) errors.unknowns = "Choose an unknowns level.";
   return errors;
+}
+
+/** Human-readable problems with the answers, in form order. Empty when the answers are usable. */
+export function validateAnswers(a: IntakeAnswers): string[] {
+  const errors = fieldErrors(a);
+  return INTAKE_FIELDS.flatMap((f) => (errors[f] ? [errors[f]] : []));
 }
 
 export interface IntakeSuggestion extends SizeSuggestion {
@@ -110,7 +129,8 @@ export function createProject(a: IntakeAnswers, size: Size, today: string = toda
     reason: "Initial sizing",
     approvedBy: null,
     itemsCut: [],
-    itemsAdded: phases.flatMap((p) => p.items.map((it) => it.id)),
+    // v1: nothing is "added" at the start. Every item is part of the initial sizing.
+    itemsAdded: [],
   };
 
   const approver = a.approver.trim();
