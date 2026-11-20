@@ -9,19 +9,33 @@ const setVal = (id: string, value: string): void => {
   node.dispatchEvent(new Event("input", { bubbles: true }));
 };
 
+/** Chooses a selection card (a radio): check it and fire change, as a click does. */
+const pick = (name: string, value: string): void => {
+  const radio = document.getElementById(`${name}-${value}`) as HTMLInputElement;
+  radio.checked = true;
+  radio.dispatchEvent(new Event("change", { bubbles: true }));
+};
+/** The checked value of a selection-card group. */
+const chosen = (name: string): string =>
+  (document.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement | null)?.value ?? "";
+
 const fill = (over: Partial<Record<string, string>> = {}): void => {
   const values: Record<string, string> = {
     "f-name": "Acme Relaunch",
-    "f-track": "brand",
     "f-start": "2026-11-20",
     "f-deadline": "2026-11-25",
     "f-deliverables": "2",
     "f-approvers": "1",
-    "f-risk": "easy_undo",
-    "f-unknowns": "none",
     ...over,
   };
-  for (const [id, v] of Object.entries(values)) setVal(id, v);
+  for (const [id, v] of Object.entries(values)) {
+    if (id === "f-track" || id === "f-risk" || id === "f-unknowns") pick(id, v);
+    else setVal(id, v);
+  }
+  // Selection-card groups that the caller did not set get their usual defaults.
+  if (!("f-track" in over)) pick("f-track", "brand");
+  if (!("f-risk" in over)) pick("f-risk", "easy_undo");
+  if (!("f-unknowns" in over)) pick("f-unknowns", "none");
 };
 
 const btn = (): HTMLButtonElement => document.getElementById("f-download") as HTMLButtonElement;
@@ -35,7 +49,8 @@ const errorOf = (id: string): string => {
   const line = document.getElementById(`err-${id}`);
   return line && !line.hidden ? line.textContent ?? "" : "";
 };
-const sizeSel = (): HTMLSelectElement => document.getElementById("f-size") as HTMLSelectElement;
+/** The checked size card. */
+const sizeSel = (): { value: string } => ({ value: chosen("f-size") });
 const text = (id: string): string => document.getElementById(id)?.textContent ?? "";
 
 describe("intake form", () => {
@@ -80,15 +95,13 @@ describe("intake form", () => {
 
   it("allows override: picking S for a suggested M keeps download enabled", () => {
     fill({ "f-deadline": "2026-12-01", "f-deliverables": "8" });
-    sizeSel().value = "S";
-    sizeSel().dispatchEvent(new Event("change", { bubbles: true }));
+    pick("f-size", "S");
     expect(btn().disabled).toBe(false);
   });
 
   it("keeps an override when answers change afterwards", () => {
     fill({ "f-deadline": "2026-12-01", "f-deliverables": "8" });
-    sizeSel().value = "S";
-    sizeSel().dispatchEvent(new Event("change", { bubbles: true }));
+    pick("f-size", "S");
     setVal("f-deliverables", "9");
     expect(sizeSel().value).toBe("S");
   });
@@ -159,8 +172,7 @@ describe("intake form", () => {
 
   it("download saves the chosen size's ZIP name and content", async () => {
     fill({ "f-deadline": "2026-12-01", "f-deliverables": "8", "f-approver": "Approver A" });
-    sizeSel().value = "M";
-    sizeSel().dispatchEvent(new Event("change", { bubbles: true }));
+    pick("f-size", "M");
     btn().click();
     await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     const [blob, filename] = save.mock.calls[0] as [Blob, string];

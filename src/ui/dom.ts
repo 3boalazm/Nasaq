@@ -31,3 +31,24 @@ export function saveBlob(blob: Blob, filename: string): void {
 }
 
 export type SaveFn = (blob: Blob, filename: string) => void;
+
+/**
+ * A selection card: a real radio input with the card as its label. Arrow keys work because the
+ * radios share a name. `children` is the card content; the label text is the card's accessible name.
+ */
+export function choice(name: string, id: string, value: string, children: Array<Node | string>, className = ""): HTMLLabelElement {
+  const input = el("input", { type: "radio", name, id, value });
+  return el("label", { className: `choice ${className}`.trim(), htmlFor: id }, [input, ...children]);
+}
+
+/** The value of the checked radio in a group named `name`, or "" when none is checked. */
+export function checkedValue(root: ParentNode, name: string): string {
+  return root.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? "";
+}
+
+/** Sets the radio in a group by value. Does not fire events. */
+export function setChecked(root: ParentNode, name: string, value: string): void {
+  for (const radio of Array.from(root.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`))) {
+    radio.checked = radio.value === value;
+  }
+}

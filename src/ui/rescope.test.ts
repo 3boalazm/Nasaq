@@ -8,6 +8,14 @@ import type { Project } from "../core/types";
 function setVal(id: string, value: string): void {
   (document.getElementById(id) as HTMLInputElement | HTMLSelectElement).value = value;
 }
+/** The checked new-size card. */
+const sizeVal = (): string => (document.querySelector('input[name="rs-size"]:checked') as HTMLInputElement | null)?.value ?? "";
+/** Chooses a new-size card: check its radio and fire change, as a click does. */
+function pickSize(value: string): void {
+  const radio = document.getElementById(`rs-size-${value}`) as HTMLInputElement;
+  radio.checked = true;
+  radio.dispatchEvent(new Event("change", { bubbles: true }));
+}
 function check(id: string, on = true): void {
   const box = document.getElementById(id) as HTMLInputElement;
   box.checked = on;
@@ -47,10 +55,9 @@ describe("rescope UI", () => {
   it("cut step is shown for a move down and hidden for a move up", () => {
     mountRescope(root, mixed("M"), { save, today: "2026-11-01", onRescoped });
     // default new size for M is S (first option other than M)
-    expect((document.getElementById("rs-size") as HTMLSelectElement).value).toBe("S");
+    expect(sizeVal()).toBe("S");
     expect(root.querySelector<HTMLElement>(".cut-step")?.hidden).toBe(false);
-    setVal("rs-size", "L");
-    document.getElementById("rs-size")!.dispatchEvent(new Event("change"));
+    pickSize("L");
     expect(root.querySelector<HTMLElement>(".cut-step")?.hidden).toBe(true);
   });
 
@@ -111,8 +118,7 @@ describe("rescope UI", () => {
 
   it("a move up needs no cut and saves the new files ZIP name", async () => {
     mountRescope(root, sampleProject("S"), { save, today: "2026-11-01", onRescoped });
-    setVal("rs-size", "M");
-    document.getElementById("rs-size")!.dispatchEvent(new Event("change"));
+    pickSize("M");
     setVal("rs-reason", "Scope grew");
     setVal("rs-approved", "Approver A");
     btn().click();

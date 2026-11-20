@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { mountStatus } from "./status";
-import { status, scopeAlert } from "../core/status";
 import { rescope } from "../core/rescope";
 import { sampleProject } from "../testutil/sample";
 import type { Project } from "../core/types";
@@ -19,30 +18,33 @@ function niceProject(title: string): Project {
 }
 
 describe("status size history shows cut items as title (id)", () => {
-  it("the Items cut column lists the title and the id", () => {
+  it("the Items cut value lists the title and the id, newest change first", () => {
     const p = niceProject("Workshop");
     const id = p.phases[0]!.items[0]!.id;
     const next = rescope(p, "S", "Client cut scope", APPROVER, "2026-11-05", { cutItemIds: [id] });
     const root = document.createElement("div");
     document.body.append(root);
-    mountStatus(root, status(next, "2026-11-06"), scopeAlert(next));
-    const headers = Array.from(root.querySelectorAll("table.history thead th")).map((th) => th.textContent);
-    expect(headers).toEqual(["Date", "From → to", "Reason", "Items cut", "Approved by"]);
-    const cells = Array.from(root.querySelectorAll("table.history tbody tr"))[1]!.querySelectorAll("td");
-    expect(cells[3]!.textContent).toBe(`Workshop (${id})`);
-    expect(cells[4]!.textContent).toBe(APPROVER);
+    mountStatus(root, next, "2026-11-06");
+    const rows = Array.from(root.querySelectorAll("ol.activity > li"));
+    expect(rows.length).toBe(2);
+    // The rescope is the newest record, so it comes first.
+    const valueOf = (row: Element, label: string): string | undefined =>
+      Array.from(row.querySelectorAll(".act-line"))
+        .find((line) => line.querySelector(".k")?.textContent === label)
+        ?.querySelector(".v")?.textContent ?? undefined;
+    expect(valueOf(rows[0]!, "Items cut")).toBe(`Workshop (${id})`);
+    expect(valueOf(rows[0]!, "Approved by")).toBe(APPROVER);
     // The first record (initial sizing) has no cut items.
-    const first = Array.from(root.querySelectorAll("table.history tbody tr"))[0]!.querySelectorAll("td");
-    expect(first[3]!.textContent).toBe("none");
+    expect(valueOf(rows[1]!, "Items cut")).toBe("none");
     root.remove();
   });
 
-  it("the history table sits inside a box that scrolls sideways, not the page", () => {
+  it("the size history list sits inside a box that scrolls sideways, not the page", () => {
     const root = document.createElement("div");
     document.body.append(root);
     const p = niceProject("Workshop");
-    mountStatus(root, status(p, "2026-11-06"), scopeAlert(p));
-    expect(root.querySelector("div.table-wrap > table.history")).not.toBeNull();
+    mountStatus(root, p, "2026-11-06");
+    expect(root.querySelector("div.table-wrap > ol.activity")).not.toBeNull();
     root.remove();
   });
 });

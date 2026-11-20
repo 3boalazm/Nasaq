@@ -4,7 +4,8 @@ import { projectSlug } from "../core/files";
 import { todayIso } from "../core/intake";
 import type { OpenItem } from "../core/status";
 import { SIZES, type Project, type Size } from "../core/types";
-import { el, field, saveBlob, type SaveFn } from "./dom";
+import { el, field, saveBlob, choice, checkedValue, type SaveFn } from "./dom";
+import { SIZE_NAMES } from "./labels";
 
 export interface RescopeOptions {
   save?: SaveFn;
@@ -31,11 +32,26 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
   const today = opts.today ?? todayIso();
   const errorsEl = el("ul", { className: "errors", id: "rs-errors" });
 
-  const sizeSel = el(
-    "select",
-    { id: "rs-size" },
-    SIZES.filter((s) => s !== project.size).map((s) => el("option", { value: s, textContent: s })),
-  );
+  // New size: the same selection cards as the wizard. The first size other than the current one is preselected.
+  const otherSizes = SIZES.filter((s) => s !== project.size);
+  const sizeGroup = el("fieldset", { id: "rs-size", className: "choice-group size-group" }, [
+    el("legend", { textContent: "New size" }),
+    ...otherSizes.map((s, i) =>
+      choice(
+        "rs-size",
+        `rs-size-${s}`,
+        s,
+        [
+          el("span", { className: "card-size", textContent: s }),
+          el("span", { className: "card-name", textContent: SIZE_NAMES[s] }),
+          el("span", { className: "check", textContent: "✓" }, []),
+        ],
+        "size-card compact",
+      ),
+    ),
+  ]);
+  const firstSize = sizeGroup.querySelector<HTMLInputElement>('input[name="rs-size"]');
+  if (firstSize) firstSize.checked = true;
   const reasonInput = el("input", { id: "rs-reason", type: "text" });
   const approvedInput = el("input", { id: "rs-approved", type: "text", required: true });
   const dateInput = el("input", { id: "rs-date", type: "date", value: today });
@@ -82,21 +98,22 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
   }
 
   function updateDirection(): void {
-    const newSize = sizeSel.value as Size;
-    const down = newSize !== undefined && directionOf(project.size, newSize) === "down";
+    const picked = checkedValue(sizeGroup, "rs-size");
+    const down = picked !== "" && directionOf(project.size, picked as Size) === "down";
     cutSection.hidden = !down;
     if (!down) {
       for (const b of cutCheckboxes) b.checked = false;
       updateMustWarning();
     }
   }
-  sizeSel.addEventListener("change", updateDirection);
+  sizeGroup.addEventListener("change", updateDirection);
 
-  const button = el("button", { id: "rs-download", type: "button", textContent: "Download rescope ZIP" });
+  const button = el("button", { id: "rs-download", type: "button", className: "primary", textContent: "Download rescope ZIP" });
   button.addEventListener("click", async () => {
     errorsEl.replaceChildren();
-    const newSize = sizeSel.value as Size;
-    const down = directionOf(project.size, newSize) === "down";
+    const picked = checkedValue(sizeGroup, "rs-size");
+    const newSize = picked as Size;
+    const down = picked !== "" && directionOf(project.size, newSize) === "down";
     const cutIds = down ? cutCheckboxes.filter((b) => b.checked).map((b) => b.value) : [];
     try {
       const next = rescope(project, newSize, reasonInput.value, approvedInput.value, dateInput.value, {
@@ -112,9 +129,9 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
   });
 
   root.replaceChildren(
-    el("h2", { textContent: "Rescope" }),
+    el("h2", { className: "card-head", textContent: "Rescope" }),
     el("p", { className: "hint", textContent: `Current size: ${project.size}. Choose the new size and a reason. A change record is written to the ZIP's RESCOPE_NOTE.md and to project.yml.` }),
-    field("rs-size", "New size", sizeSel),
+    sizeGroup,
     field("rs-reason", "Reason (required)", reasonInput),
     field("rs-approved", "Approved by (required)", approvedInput),
     field("rs-date", "Date of change", dateInput),
