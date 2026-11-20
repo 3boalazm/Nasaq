@@ -4,7 +4,35 @@
 
 S5: UI redesign. Branch `arena/7ff7b194-nasaq`, from `main` at `4a23fb0` (S4 merged as PR #5). Pull request: open from this branch, not merged. Not deployed. No further sprint started.
 
-Code commit checked in the latest revision: `fc3012c` (fresh clone, see "Review fix round" below). This file is updated in a later commit that only changes docs.
+Code commit checked in the latest revision: `e251e11` (fresh clone, see "Review round 3" below). This file is updated in a later commit that only changes docs.
+
+## Review round 3 (on `e251e11`)
+
+The owner checked `fc3012c` in Chrome: colours, cards, borders, selected states and the dashboard render; 390 tests passed. One accuracy fix was requested.
+
+1. **Phase bars by item count.** Each phase bar has three segments, sized by item count: done = dark green (`--accent`), open = neutral grey (`--line-soft`, on a white track with a 1px `--line` edge so the grey is visible), cut = striped grey (`--cut` and `--line`). A phase with 0 done has no green segment. The text label is unchanged, for example "0 done · 2 open · 0 cut", and is the accessible label. The open segment was light green before; that was the bug.
+2. **Open items progress bar.** Counts done items against items not cut, across all phases. Its colour is unchanged (light green, per the S5 token rule "light green for progress"). Tests check the value and the maximum.
+3. **Dashboard layout.** The Size history card is full width, so it no longer sits alone in a row. The grid stretches cards to the row height (`align-items: stretch`, guarded by a test). Row order on desktop: Open items (2 columns) and Size; Deliverables, Scope and Phases; Size history (full width); Rescope (full width).
+
+Tests added: `src/ui/dashboard.test.ts` (phase bars for 0 done, some done, all done, one cut, proportional sizes; Open items bar counts; history full width) and `src/ui/layout.test.ts` (phase colour rules; no `accent-light` on the open segment; grid stretch).
+
+### Checks (fresh clone of `e251e11`, `/tmp/t3-final`)
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | exit 0 |
+| `npm test` | exit 0. 27 files, 400 tests passed. |
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0. Postbuild dist scan passes. |
+| `npm run test:dist` | exit 0. 14 tests passed. |
+| URLs in `dist/` | 2 distinct, both dependency strings already allowlisted. |
+| `grep innerHTML` in `src/ui` (not tests) | Only a comment (`dom.ts:1`). |
+
+The same commands pass in `/home/user/Nasaq` at `e251e11`.
+
+### Still not seen
+
+I have not seen the page in a browser. There is no browser in this sandbox. The phase colours, the striped cut segment, and the card layout are verified by tests on the DOM and the CSS source, not by looking at the result. Please check the phase bars and the dashboard row layout in Chrome at 375, 1280 px.
 
 ## Review fix round (PR #6 review, on `fc3012c`)
 
