@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -61,5 +61,70 @@ describe("M4.2 built dist/ has no URLs outside license comments", () => {
   it.each(KNOWN_DEPENDENCY_TEXT)("$url appears exactly once, in code ($where)", ({ url }) => {
     const count = scanDir(dist).filter((h) => !h.inComment && h.url === url).length;
     expect(count).toBe(1);
+  });
+});
+
+// S5 (review fix): the built CSS must define every design token it uses. A missing import of
+// tokens.css once left the page with no colours, and no test failed. These checks read the built CSS.
+function builtCss(): string {
+  const assets = join(dist, "assets");
+  if (!existsSync(assets)) return "";
+  return readdirSync(assets)
+    .filter((f) => f.endsWith(".css"))
+    .map((f) => readFileSync(join(assets, f), "utf8"))
+    .join("\n");
+}
+
+/** Names defined as custom properties (`--name:`) in the built CSS. */
+function definedTokens(css: string): Set<string> {
+  return new Set(Array.from(css.matchAll(/(?:^|[;{}\s])--([a-z0-9-]+)\s*:/g), (m) => m[1]!));
+}
+
+/** The body of the first rule whose selector matches `selector`, or "" when none does. */
+function ruleBodyMatching(css: string, selector: RegExp): string {
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (selector.test(m[1]!.trim())) return m[2]!;
+  }
+  return "";
+}
+
+describe("S5 built CSS has its design tokens and input styles", () => {
+  it("dist/ has a CSS file (run npm run build first)", () => {
+    expect(builtCss().length, "no CSS in dist/assets").toBeGreaterThan(0);
+  });
+
+  it("every var(--name) used in the built CSS is defined in the built CSS", () => {
+    const css = builtCss();
+    const defined = definedTokens(css);
+    const used = new Set(Array.from(css.matchAll(/var\(--([a-z0-9-]+)/g), (m) => m[1]!));
+    expect(used.size).toBeGreaterThan(0);
+    const missing = [...used].filter((name) => !defined.has(name));
+    expect(missing, `undefined tokens: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("the built CSS defines --page, --surface, --ink and --accent", () => {
+    const defined = definedTokens(builtCss());
+    for (const name of ["page", "surface", "ink", "accent"]) {
+      expect(defined.has(name), `--${name}`).toBe(true);
+    }
+  });
+
+  it("text, date, number and textarea fields have a 1px --line border on --surface", () => {
+    const body = ruleBodyMatching(builtCss(), /input:not\(\[type=["']?checkbox/);
+    expect(body, "no input rule in the built CSS").not.toBe("");
+    expect(body).toMatch(/border:\s*1px solid var\(--line\)/);
+    expect(body).toMatch(/background:\s*var\(--surface\)/);
+    expect(builtCss()).toMatch(/textarea/);
+  });
+
+  it("every control has a visible focus ring in --focus", () => {
+    const body = ruleBodyMatching(builtCss(), /input:focus-visible/);
+    expect(body).toMatch(/outline:\s*3px solid var\(--focus\)/);
+  });
+
+  it("the file input button is styled as a pill, and the native input is not hidden", () => {
+    const css = builtCss();
+    expect(css).toMatch(/::file-selector-button/);
+    expect(ruleBodyMatching(css, /input\[type=["']?file/)).not.toMatch(/display:\s*none/);
   });
 });

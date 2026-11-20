@@ -107,9 +107,26 @@ textarea {
   color: var(--ink);
 }
 
+/* The native file input stays visible and keyboard reachable. Only its button is restyled. */
 input[type="file"] {
   font: inherit;
   max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+input[type="file"]::file-selector-button {
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.75rem;
+  margin-right: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
 }
 
 input:focus-visible,

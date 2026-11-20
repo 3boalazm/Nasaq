@@ -1,3 +1,5 @@
+// Tokens first: style.css uses the variables they define.
+import "./tokens.css";
 import "./style.css";
 import { mountApp } from "./app";
 

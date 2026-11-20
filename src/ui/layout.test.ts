@@ -105,3 +105,17 @@ describe("S5 layout and motion rules (regression guard, not a layout measurement
     expect(css).not.toMatch(/url\(\s*["']?https?:/);
   });
 });
+
+describe("S5 input styling in the source stylesheet", () => {
+  it("text, date, number and textarea fields have a 1px --line border on a --surface background", () => {
+    const body = ruleBody('input:not([type="checkbox"]):not([type="radio"]),\nselect,\ntextarea');
+    expect(body).toMatch(/border:\s*1px solid var\(--line\)/);
+    expect(body).toMatch(/background:\s*var\(--surface\)/);
+  });
+
+  it("focus shows a 3px --focus ring on inputs and buttons", () => {
+    expect(ruleBody("input:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nbutton:focus-visible,\nlabel:has(input:focus-visible)")).toMatch(
+      /outline:\s*3px solid var\(--focus\)/,
+    );
+  });
+});

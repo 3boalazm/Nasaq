@@ -108,7 +108,7 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
   }
   sizeGroup.addEventListener("change", updateDirection);
 
-  const button = el("button", { id: "rs-download", type: "button", textContent: "Download rescope ZIP" });
+  const button = el("button", { id: "rs-download", type: "button", className: "primary", textContent: "Download rescope ZIP" });
   button.addEventListener("click", async () => {
     errorsEl.replaceChildren();
     const picked = checkedValue(sizeGroup, "rs-size");
