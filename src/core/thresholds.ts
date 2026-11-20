@@ -49,3 +49,5 @@ export const UNKNOWNS_SIZES: Record<UnknownsLevel, Size> = {
 
 /** Largest project.yml the page will read. Bigger files are refused before parsing. */
 export const MAX_PROJECT_YAML_BYTES = 1024 * 1024;
+/** The same limit in megabytes, for messages. */
+export const MAX_PROJECT_YAML_MB = MAX_PROJECT_YAML_BYTES / (1024 * 1024);

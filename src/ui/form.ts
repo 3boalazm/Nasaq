@@ -14,36 +14,38 @@ import { phaseDefs } from "../core/templates";
 import { buildZip } from "../core/zip";
 import type { AnswerKey, SizeSuggestion } from "../core/size";
 import { TRACKS, type Size, type Track } from "../core/types";
-import { el, field, saveBlob, type SaveFn, choice, checkedValue, setChecked } from "./dom";
-import { SIZE_NAMES, TRACK_LABELS } from "./labels";
+import { el, field, saveBlob, type SaveFn, choice, checkedValue, setChecked, wireArrowKeys } from "./dom";
+import { sizeName, trackName } from "./labels";
+import { bind, describeError, ltr, onLanguageChange, pluralText, t, translate } from "./i18n";
+import type { MessageKey } from "./i18n/en";
 
-const ANSWER_LABELS: Record<AnswerKey, string> = {
-  duration: "Duration",
-  deliverables: "Deliverables",
-  approvers: "Approvers",
-  risk: "Risk",
-  unknowns: "Unknowns",
+const ANSWER_KEYS: Record<AnswerKey, MessageKey> = {
+  duration: "answer.duration",
+  deliverables: "answer.deliverables",
+  approvers: "answer.approvers",
+  risk: "answer.risk",
+  unknowns: "answer.unknowns",
 };
 
-const RISK_OPTIONS: ReadonlyArray<readonly [string, string]> = [
-  ["easy_undo", "Easy to undo"],
-  ["some_rework", "Some rework if wrong"],
-  ["hard_undo", "Hard to undo (production database, print run, legal, launch date)"],
+const RISK_OPTIONS: ReadonlyArray<readonly [string, MessageKey]> = [
+  ["easy_undo", "risk.easy_undo"],
+  ["some_rework", "risk.some_rework"],
+  ["hard_undo", "risk.hard_undo"],
 ];
-const UNKNOWNS_OPTIONS: ReadonlyArray<readonly [string, string]> = [
-  ["none", "None"],
-  ["few", "A few"],
-  ["research_needed", "Research needed before planning"],
+const UNKNOWNS_OPTIONS: ReadonlyArray<readonly [string, MessageKey]> = [
+  ["none", "unknowns.none"],
+  ["few", "unknowns.few"],
+  ["research_needed", "unknowns.research_needed"],
 ];
 const SIZE_LIST: readonly Size[] = ["S", "M", "L"];
 
 /** The three wizard steps, with the intake fields each step asks for. Step 3 has none of its own. */
-const STEPS: ReadonlyArray<{ title: string; fields: readonly IntakeField[] }> = [
-  { title: "What kind of project?", fields: ["name", "track"] },
-  { title: "How big is it?", fields: ["startDate", "deadline", "deliverables", "approvers", "risk", "unknowns"] },
-  { title: "Confirm the size", fields: [] },
+const STEPS: ReadonlyArray<{ title: MessageKey; fields: readonly IntakeField[] }> = [
+  { title: "step.1", fields: ["name", "track"] },
+  { title: "step.2", fields: ["startDate", "deadline", "deliverables", "approvers", "risk", "unknowns"] },
+  { title: "step.3", fields: [] },
 ];
-const STAGE_NAMES = ["Project", "Scope", "Size"];
+const STAGE_NAMES: readonly MessageKey[] = ["stage.project", "stage.scope", "stage.size"];
 
 /** The form control (or group) for each intake field. Used for ids and error lines. */
 const CONTROL_ID: Record<IntakeField, string> = {
@@ -74,17 +76,18 @@ function input(id: string, type: string, extra: Partial<HTMLInputElement> = {}):
 }
 
 /** A group of selection cards for one intake field. The fieldset carries data-field for events. */
-function choiceGroup(key: IntakeField, legend: string, options: ReadonlyArray<readonly [string, string]>): HTMLFieldSetElement {
+function choiceGroup(key: IntakeField, legend: MessageKey, options: ReadonlyArray<readonly [string, MessageKey]>): HTMLFieldSetElement {
   const group = el("fieldset", { className: "choice-group" }, [
-    el("legend", { textContent: legend }),
-    ...options.map(([value, text]) =>
+    translate(el("legend", {}), legend),
+    ...options.map(([value, textKey]) =>
       choice(CONTROL_ID[key], `${CONTROL_ID[key]}-${value}`, value, [
-        el("span", { className: "card-title", textContent: text }),
+        translate(el("span", { className: "card-title" }), textKey),
         el("span", { className: "check", textContent: "✓" }, []),
       ], "option-card"),
     ),
   ]);
   group.dataset["field"] = key;
+  wireArrowKeys(group);
   return group;
 }
 
@@ -121,6 +124,8 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
   const touched = new Set<IntakeField>();
   /** Set after the first Download click: every field's error is shown from then on. */
   let revealAll = false;
+  /** Step-level error messages, as functions so they can be re-translated on a language switch. */
+  let stepErrors: Array<() => string> = [];
 
   // Shared output: errors, the live summary, and the suggestion.
   const errorsEl = el("ul", { className: "errors", id: "f-errors", role: "alert" });
@@ -128,62 +133,64 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
   const durationEl = el("p", { id: "f-duration", className: "hint" });
   const deadlineHintEl = el("p", { id: "f-deadline-hint", className: "hint" });
   const sumName = el("dd", { id: "f-sum-name" });
+  sumName.dir = "auto";
   const sumTrack = el("dd", { id: "f-sum-track" });
   const sumDates = el("dd", { id: "f-sum-dates" });
 
   // Step 1: name and track.
-  const nameField = field("f-name", "Project name", input("f-name", "text", { required: true }));
+  const nameField = field("f-name", "field.name", input("f-name", "text", { required: true }));
   nameField.dataset["field"] = "name";
-  const trackGroup = el(
-    "fieldset",
-    { className: "choice-group track-group" },
-    [
-      el("legend", { textContent: "Track" }),
-      ...TRACKS.map((t: Track) =>
-        choice(
-          "f-track",
-          `f-track-${t}`,
-          t,
-          [
-            el("span", { className: "card-title", textContent: TRACK_LABELS[t] }),
-            el("span", { className: "chip", textContent: `${phaseDefs(t, "S").length} phases` }),
-            el("span", { className: "check", textContent: "✓" }, []),
-          ],
-          `track-card track-${t}`,
-        ),
-      ),
-    ],
-  );
+  const trackGroup = el("fieldset", { className: "choice-group track-group" }, [
+    translate(el("legend", {}), "legend.track"),
+    ...TRACKS.map((tr: Track) => {
+      const chip = el("span", { className: "chip" });
+      bind(() => {
+        chip.textContent = pluralText("phase", phaseDefs(tr, "S").length);
+      });
+      return choice(
+        "f-track",
+        `f-track-${tr}`,
+        tr,
+        [
+          bind2(el("span", { className: "card-title" }), () => trackName(tr)),
+          chip,
+          el("span", { className: "check", textContent: "✓" }, []),
+        ],
+        `track-card track-${tr}`,
+      );
+    }),
+  ]);
   trackGroup.dataset["field"] = "track";
+  wireArrowKeys(trackGroup);
 
   // Step 2: dates, counts, risk and unknowns.
-  const startField = field("f-start", "Start date", input("f-start", "date", { value: todayIso(), required: true }));
+  const startField = field("f-start", "field.startDate", input("f-start", "date", { value: todayIso(), required: true }));
   const deadlineField = field(
     "f-deadline",
-    "Deadline",
+    "field.deadline",
     input("f-deadline", "date", { required: true }),
-    "Duration is counted from start to deadline, both days included.",
+    "hint.deadline",
   );
   const deliverablesField = field(
     "f-deliverables",
-    "Deliverables (count)",
+    "field.deliverables",
     input("f-deliverables", "number", { min: "1", step: "1" }),
   );
   const approversField = field(
     "f-approvers",
-    "Approvers (people who approve)",
+    "field.approvers",
     input("f-approvers", "number", { min: "1", step: "1", value: "1" }),
   );
   startField.dataset["field"] = "startDate";
   deadlineField.dataset["field"] = "deadline";
   deliverablesField.dataset["field"] = "deliverables";
   approversField.dataset["field"] = "approvers";
-  const riskGroup = choiceGroup("risk", "Risk if wrong", RISK_OPTIONS);
-  const unknownsGroup = choiceGroup("unknowns", "Unknowns", UNKNOWNS_OPTIONS);
+  const riskGroup = choiceGroup("risk", "legend.risk", RISK_OPTIONS);
+  const unknownsGroup = choiceGroup("unknowns", "legend.unknowns", UNKNOWNS_OPTIONS);
 
   // Step 3: size cards, approver, out of scope.
   const sizeCards = SIZE_LIST.map((size, i) => {
-    const badge = el("span", { className: "badge", textContent: "Suggested", hidden: true });
+    const badge = translate(el("span", { className: "badge", hidden: true }), "badge.suggested");
     const detail = el("div", { className: "detail", hidden: true });
     const card = choice(
       "f-size",
@@ -192,7 +199,7 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
       [
         el("span", { className: "card-num", textContent: String(i + 1).padStart(2, "0") }),
         el("span", { className: "card-size", textContent: size }),
-        el("span", { className: "card-name", textContent: SIZE_NAMES[size] }),
+        bind2(el("span", { className: "card-name" }), () => sizeName(size)),
         badge,
         el("span", { className: "check", textContent: "✓" }, []),
         detail,
@@ -202,28 +209,33 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     return { size, card, badge, detail };
   });
   const sizeGroup = el("fieldset", { className: "choice-group size-group" }, [
-    el("legend", { textContent: "Size" }),
+    translate(el("legend", {}), "legend.size"),
     ...sizeCards.map((c) => c.card),
   ]);
   sizeGroup.dataset["field"] = "size";
-  const approverField = field("f-approver", "Approver name (optional)", input("f-approver", "text"));
+  wireArrowKeys(sizeGroup);
+  const approverField = field("f-approver", "field.approverOpt", input("f-approver", "text"));
   const outOfScopeField = field(
     "f-outofscope",
-    "Out of scope (one item per line)",
+    "field.outOfScope",
     el("textarea", { id: "f-outofscope", rows: 4 }),
   );
 
   // Navigation and progress.
   const segs = STEPS.map(() => el("span", { className: "seg" }));
   const stepCount = el("p", { id: "f-step-count", className: "step-count" });
-  const stages = STAGE_NAMES.map((name, i) =>
-    el("li", { className: "stage" }, [el("span", { className: "stage-num", textContent: String(i + 1) }), ` ${name}`]),
-  );
+  const stages = STAGE_NAMES.map((name, i) => {
+    const num = el("span", { className: "stage-num", textContent: String(i + 1) });
+    const li = el("li", { className: "stage" }, [num, " "]);
+    const label = translate(el("span", {}), name);
+    li.append(label);
+    return li;
+  });
   const stepperEl = el("ol", { className: "stepper" }, stages);
-  stepperEl.setAttribute("aria-label", "Progress");
-  const tipEl = el("p", { className: "chip tip", textContent: "Tip: cut nice items first when the deadline moves." });
+  bind(() => stepperEl.setAttribute("aria-label", t("wizard.progress")));
+  const tipEl = translate(el("p", { className: "chip tip" }), "tip");
   const headings = STEPS.map((s, i) => {
-    const h = el("h2", { id: `step-${i + 1}-title`, className: "step-title", textContent: s.title });
+    const h = translate(el("h2", { id: `step-${i + 1}-title`, className: "step-title" }), s.title);
     h.tabIndex = -1;
     return h;
   });
@@ -240,9 +252,10 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     section.setAttribute("aria-labelledby", `step-${i + 1}-title`);
     return section;
   });
-  const backBtn = el("button", { id: "f-back", type: "button", className: "secondary", textContent: "Back" });
-  const nextBtn = el("button", { id: "f-next", type: "button", className: "primary", textContent: "Continue" });
-  const downloadBtn = el("button", { id: "f-download", type: "button", className: "primary", textContent: "Download ZIP" });
+  const backBtn = translate(el("button", { id: "f-back", type: "button", className: "secondary" }), "nav.back");
+  const nextBtn = translate(el("button", { id: "f-next", type: "button", className: "primary" }), "nav.next");
+  const downloadBtn = translate(el("button", { id: "f-download", type: "button", className: "primary" }), "nav.download");
+  const noteEl = translate(el("p", { className: "hint download-note" }), "note.english");
 
   const progressEl = el("div", { className: "progress" }, segs);
   progressEl.setAttribute("aria-hidden", "true");
@@ -252,22 +265,23 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     ...stepSections,
     errorsEl,
     el("div", { className: "wizard-nav" }, [backBtn, nextBtn, downloadBtn]),
+    noteEl,
   ]);
 
   const summary = el("aside", { className: "summary", id: "f-summary" }, [
-    el("h2", { className: "summary-title", textContent: "Summary" }),
+    translate(el("h2", { className: "summary-title" }), "summary.title"),
     el("dl", { className: "summary-list" }, [
-      el("dt", { textContent: "Project" }),
+      translate(el("dt", {}), "summary.project"),
       sumName,
-      el("dt", { textContent: "Track" }),
+      translate(el("dt", {}), "summary.track"),
       sumTrack,
-      el("dt", { textContent: "Dates" }),
+      translate(el("dt", {}), "summary.dates"),
       sumDates,
     ]),
     durationEl,
     suggestionEl,
   ]);
-  summary.setAttribute("aria-label", "Summary");
+  bind(() => summary.setAttribute("aria-label", t("summary.title")));
 
   const form = el("form", { id: "intake", noValidate: true, className: "intake wizard" }, [wizardMain, summary]);
   root.replaceChildren(form);
@@ -287,14 +301,20 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
 
   const stepOf = (key: IntakeField): number => STEPS.findIndex((s) => s.fields.includes(key));
 
-  const showErrors = (messages: string[]): void => {
-    errorsEl.replaceChildren(...messages.map((m) => el("li", { textContent: m })));
+  const renderStepErrors = (): void => {
+    errorsEl.replaceChildren(...stepErrors.map((message) => el("li", { textContent: message() })));
+  };
+  onLanguageChange(renderStepErrors);
+
+  const showErrors = (messages: Array<() => string>): void => {
+    stepErrors = messages;
+    renderStepErrors();
   };
 
   /** Shows the error of each field that is touched (or all, after a Download click). */
   const showFieldErrors = (errors: Partial<Record<IntakeField, string>>): void => {
     for (const key of INTAKE_FIELDS) {
-      const message = (revealAll || touched.has(key)) && errors[key] ? errors[key] : "";
+      const message = (revealAll || touched.has(key)) && errors[key] ? t(`err.${key}` as MessageKey) : "";
       const line = errorLines.get(key)!;
       line.textContent = message;
       line.hidden = message === "";
@@ -310,7 +330,7 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     current = n;
     stepSections.forEach((s, i) => (s.hidden = i !== n));
     segs.forEach((s, i) => s.classList.toggle("on", i <= n));
-    stepCount.textContent = `${n + 1} of ${STEPS.length}`;
+    renderStep();
     stages.forEach((li, i) => {
       li.classList.toggle("done", i < n);
       li.classList.toggle("current", i === n);
@@ -320,9 +340,15 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     backBtn.hidden = n === 0;
     nextBtn.hidden = n === STEPS.length - 1;
     downloadBtn.hidden = n !== STEPS.length - 1;
-    errorsEl.replaceChildren();
+    stepErrors = [];
+    renderStepErrors();
     if (focusHeading) headings[n]!.focus();
   };
+
+  const renderStep = (): void => {
+    stepCount.textContent = t("wizard.stepOf", { n: current + 1, total: STEPS.length });
+  };
+  onLanguageChange(renderStep);
 
   const focusField = (key: IntakeField): void => {
     form.querySelector<HTMLElement>(`#${FOCUS_TARGET[key]}`)?.focus();
@@ -341,23 +367,27 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
         c.detail.append(
           el("p", {
             className: "detail-line",
-            textContent: `Decided by: ${suggestion.decidedBy.map((k) => ANSWER_LABELS[k]).join(", ")}.`,
+            textContent: t("detail.decidedBy", { by: decidedBy(suggestion) }),
           }),
         );
       }
-      c.detail.append(el("p", { className: "detail-line", textContent: "Files in the folder:" }));
+      c.detail.append(el("p", { className: "detail-line", textContent: t("detail.files") }));
       const files = validTrack
         ? filePlan(a.track as Track, c.size).map((f) => el("li", { textContent: f }))
-        : [el("li", { textContent: "Choose a track to see the files." })];
-      c.detail.append(el("ul", { className: "files" }, files));
+        : [el("li", { textContent: t("detail.chooseTrack") })];
+      c.detail.append(el("ul", { className: "files ltr" }, files));
     }
   };
 
+  const decidedBy = (s: SizeSuggestion): string => s.decidedBy.map((k) => t(ANSWER_KEYS[k])).join(t("list.sep"));
+
   const updateSummary = (a: IntakeAnswers): void => {
-    sumName.textContent = a.name.trim() || "Not named yet";
-    sumTrack.textContent = (TRACKS as readonly string[]).includes(a.track) ? TRACK_LABELS[a.track as Track] : "Not chosen";
+    sumName.textContent = a.name.trim() || t("summary.notNamed");
+    sumTrack.textContent = (TRACKS as readonly string[]).includes(a.track) ? trackName(a.track as Track) : t("summary.notChosen");
     sumDates.textContent =
-      isRealIsoDate(a.startDate) && isRealIsoDate(a.deadline) ? `${a.startDate} to ${a.deadline}` : "Not set";
+      isRealIsoDate(a.startDate) && isRealIsoDate(a.deadline)
+        ? t("summary.range", { start: ltr(a.startDate), end: ltr(a.deadline) })
+        : t("summary.notSet");
   };
 
   const refresh = (): void => {
@@ -366,26 +396,23 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     showFieldErrors(errors);
     // Both dates are YYYY-MM-DD, so string comparison is date comparison.
     deadlineHintEl.textContent =
-      a.startDate && a.deadline && a.deadline < a.startDate
-        ? "The deadline is before the start date. Duration counts as 1 day."
-        : "";
+      a.startDate && a.deadline && a.deadline < a.startDate ? t("deadline.before") : "";
 
     let suggestion: SizeSuggestion | null = null;
     if (Object.keys(errors).length > 0) {
-      suggestionEl.textContent = "Fill in the fields above to see a suggested size.";
+      suggestionEl.textContent = t("suggest.fill");
       durationEl.textContent = "";
     } else {
       const s = suggestFromIntake(a);
-      suggestionEl.textContent = `Suggested size: ${s.size}. Decided by: ${s.decidedBy
-        .map((k) => ANSWER_LABELS[k])
-        .join(", ")}.`;
-      durationEl.textContent = `Duration: ${s.duration} day${s.duration === 1 ? "" : "s"}, counting start and deadline.`;
+      suggestionEl.textContent = t("suggest.line", { size: s.size, by: decidedBy(s) });
+      durationEl.textContent = t("duration.line", { d: pluralText("day", s.duration) });
       if (!sizeOverridden) setChecked(form, "f-size", s.size);
       suggestion = s;
     }
     updateSizeCards(suggestion, a);
     updateSummary(a);
   };
+  onLanguageChange(refresh);
 
   /** Marks the field the event came from as touched, then refreshes. */
   const touch = (event: Event): void => {
@@ -432,7 +459,7 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
     }
     const sizeChosen = checkedValue(form, "f-size") as Size | "";
     if (sizeChosen === "") {
-      showErrors(["Choose a size."]);
+      showErrors([() => t("err.chooseSize")]);
       return;
     }
     try {
@@ -440,11 +467,20 @@ export function mountIntakeForm(root: HTMLElement, save: SaveFn = saveBlob): HTM
       const blob = await buildZip(project);
       save(blob, zipFileName(project));
     } catch (err) {
-      showErrors([(err as Error).message]);
+      const message = describeError(err);
+      showErrors([() => message]);
     }
   });
 
   goTo(0, false);
   refresh();
   return form;
+}
+
+/** Keeps a text node's content in step with a function that reads the language. */
+function bind2<N extends HTMLElement>(node: N, text: () => string): N {
+  bind(() => {
+    node.textContent = text();
+  });
+  return node;
 }

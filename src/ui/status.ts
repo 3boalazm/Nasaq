@@ -1,8 +1,10 @@
 import { scopeAlert, status, type OpenItem, type ProjectStatus, type ScopeAlert } from "../core/status";
-import { DELIVERABLES_BANDS } from "../core/thresholds";
+import { DELIVERABLES_BANDS, DURATION_DAYS_BANDS } from "../core/thresholds";
 import type { Item, Project, Size } from "../core/types";
 import { el } from "./dom";
-import { SIZE_NAMES, TRACK_LABELS } from "./labels";
+import { sizeName, trackName } from "./labels";
+import { bind, ltr, pluralText, t, translate } from "./i18n";
+import type { MessageKey } from "./i18n/en";
 
 export type Line = [label: string, value: string];
 
@@ -13,29 +15,53 @@ function itemText(it: OpenItem): string {
 /** Label and value pairs for the status summary. Pure, so it can be tested without the DOM. */
 export function statusLines(s: ProjectStatus): Line[] {
   const days = !s.hasDeadline
-    ? "no deadline set"
+    ? t("dash.noDeadline")
     : s.overdue
-      ? "overdue"
-      : `${s.daysLeft} day${s.daysLeft === 1 ? "" : "s"} (counting today and the deadline)`;
+      ? t("dash.overdue")
+      : t("dash.daysCounting", { d: pluralText("day", s.daysLeft) });
+  const list = (items: OpenItem[]): string => (items.length ? items.map(itemText).join(t("reasons.sep")) : t("dash.none"));
   return [
-    ["Project", s.name],
-    ["Track", s.track],
-    ["Size", s.size],
-    ["Start", s.startDate],
-    ["Deadline", s.deadline ?? "not set"],
-    ["Days left", days],
-    ["Current phase", s.currentPhase ?? "none: every item is done or cut"],
-    ["Deliverables (not cut)", String(s.deliverables)],
-    ["Open must items", s.openMust.length ? s.openMust.map(itemText).join("; ") : "none"],
-    ["Open nice items", s.openNice.length ? s.openNice.map(itemText).join("; ") : "none"],
-    ["Size changes", String(s.sizeHistory.length)],
+    [t("dash.line.project"), s.name],
+    [t("dash.line.track"), trackName(s.track)],
+    [t("dash.line.size"), s.size],
+    [t("dash.line.start"), s.startDate],
+    [t("dash.line.deadline"), s.deadline ?? t("dash.notSet")],
+    [t("dash.line.daysLeft"), days],
+    [t("dash.line.phase"), s.currentPhase ?? t("dash.noPhase")],
+    [t("dash.line.deliverables"), String(s.deliverables)],
+    [t("dash.line.openMust"), list(s.openMust)],
+    [t("dash.line.openNice"), list(s.openNice)],
+    [t("dash.line.changes"), String(s.sizeHistory.length)],
   ];
 }
 
-/** Scope alert text, or null when there is no alert. The alert never changes the size. */
-export function alertMessage(a: ScopeAlert): string | null {
+/**
+ * The reasons the scope alert gives, written from the same thresholds as core, in the current language.
+ * Core's own English reasons are not shown on the page.
+ */
+export function scopeReasons(project: Project, a: ScopeAlert): string[] {
+  if (project.size === "L") return [];
+  const size: Size = project.size;
+  const out: string[] = [];
+  const maxDeliverables = DELIVERABLES_BANDS[size].max;
+  if (a.deliverables > maxDeliverables) {
+    out.push(t("alert.deliv", { n: a.deliverables, size, max: maxDeliverables }));
+  }
+  const maxDays = DURATION_DAYS_BANDS[size].max;
+  if (a.duration !== null && a.duration > maxDays) {
+    out.push(t("alert.days", { n: a.duration, size, max: maxDays }));
+  }
+  return out;
+}
+
+/**
+ * Scope alert text, or null when there is no alert. The alert never changes the size.
+ * Pass the project to get the reasons in the current language.
+ */
+export function alertMessage(a: ScopeAlert, project?: Project): string | null {
   if (!a.alert) return null;
-  return `Scope alert: ${a.reasons.join("; ")}. Suggested next size: ${a.suggestedSize}. Nothing has changed. Rescope if you want to move up.`;
+  const reasons = project ? scopeReasons(project, a) : a.reasons;
+  return t("alert.text", { reasons: reasons.join(t("reasons.sep")), size: a.suggestedSize ?? "" });
 }
 
 /** Done, open and cut counts for each phase, in phase order. Derived from project.yml only. */
@@ -56,17 +82,23 @@ export function deliverableLimit(size: Size): number | null {
   return size === "L" ? null : DELIVERABLES_BANDS[size].max;
 }
 
-const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-function card(id: string, title: string, extra: string[] = []): { node: HTMLElement; body: HTMLElement } {
+/** A card: a section with a translated heading. `body` gets the content. */
+function card(id: string, titleKey: MessageKey, extra: string[] = []): { node: HTMLElement; body: HTMLElement } {
   const body = el("div", { className: "card-body" });
-  const node = el("section", { className: ["card", ...extra].join(" "), id }, [
-    el("h3", { className: "card-head", textContent: title }),
-    body,
-  ]);
+  const heading = translate(el("h3", { className: "card-head" }), titleKey);
+  heading.id = `${id}-title`;
+  const node = el("section", { className: ["card", ...extra].join(" "), id }, [heading, body]);
   node.setAttribute("aria-labelledby", `${id}-title`);
-  node.querySelector("h3")!.id = `${id}-title`;
   return { node, body };
+}
+
+/** A text node whose content follows the language. */
+function live<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]>, text: () => string): HTMLElementTagNameMap[K] {
+  const node = el(tag, props);
+  bind(() => {
+    node.textContent = text();
+  });
+  return node;
 }
 
 function openItemsCard(project: Project): HTMLElement {
@@ -75,17 +107,12 @@ function openItemsCard(project: Project): HTMLElement {
   );
   const total = project.phases.reduce((n, ph) => n + ph.items.filter((it) => it.status !== "cut").length, 0);
   const done = project.phases.reduce((n, ph) => n + ph.items.filter((it) => it.status === "done").length, 0);
-  const { node, body } = card("card-open", "Open items", ["card-wide-2"]);
-  body.append(
-    el("p", { className: "big-line", textContent: `${done} of ${total} done` }),
-    (() => {
-      const bar = el("progress", { max: Math.max(total, 1), value: done, className: "progress-bar" });
-      bar.setAttribute("aria-label", `${done} of ${total} items done`);
-      return bar;
-    })(),
-  );
+  const { node, body } = card("card-open", "dash.card.open", ["card-wide-2"]);
+  const bar = el("progress", { max: Math.max(total, 1), value: done, className: "progress-bar" });
+  bind(() => bar.setAttribute("aria-label", t("dash.openAria", { done, total })));
+  body.append(live("p", { className: "big-line" }, () => t("dash.openDone", { done, total })), bar);
   if (items.length === 0) {
-    body.append(el("p", { className: "hint", textContent: "No open items. Every item is done or cut." }));
+    body.append(translate(el("p", { className: "hint" }), "dash.noOpen"));
   } else {
     // Must items first, then nice items, in phase order within each group.
     const ordered = [...items.filter((x) => x.it.priority === "must"), ...items.filter((x) => x.it.priority === "nice")];
@@ -96,8 +123,10 @@ function openItemsCard(project: Project): HTMLElement {
         ordered.map(({ it, phase }) =>
           el("li", {}, [
             el("span", { className: "box", textContent: "☐" }),
-            el("span", { className: "check-title", textContent: it.title }),
-            el("span", { className: "check-meta", textContent: `${phase} · ${it.priority === "must" ? "Must" : "Nice"}` }),
+            el("span", { className: "check-title", textContent: it.title, dir: "auto" }),
+            live("span", { className: "check-meta" }, () =>
+              `${phase} · ${it.priority === "must" ? t("dash.priority.must") : t("dash.priority.nice")}`,
+            ),
           ]),
         ),
       ),
@@ -107,32 +136,27 @@ function openItemsCard(project: Project): HTMLElement {
 }
 
 function sizeCard(s: ProjectStatus): HTMLElement {
-  const { node, body } = card("card-size", "Size");
-  const days = !s.hasDeadline
-    ? "No deadline set"
-    : s.overdue
-      ? "Overdue"
-      : `${plural(s.daysLeft, "day")} left`;
+  const { node, body } = card("card-size", "dash.card.size");
   body.append(
     el("p", { className: "big", textContent: s.size }),
-    el("p", { className: "big-sub", textContent: SIZE_NAMES[s.size] }),
-    el("p", { className: "meta", textContent: `Since ${s.startDate}` }),
-    el("p", { className: "meta", textContent: days }),
+    live("p", { className: "big-sub" }, () => sizeName(s.size)),
+    live("p", { className: "meta" }, () => t("dash.since", { date: ltr(s.startDate) })),
+    live("p", { className: "meta" }, () =>
+      !s.hasDeadline ? t("dash.noDeadlineCard") : s.overdue ? t("dash.overdueCard") : t("dash.left", { d: pluralText("day", s.daysLeft) }),
+    ),
   );
   return node;
 }
 
 function deliverablesCard(s: ProjectStatus): HTMLElement {
-  const { node, body } = card("card-deliverables", "Deliverables");
+  const { node, body } = card("card-deliverables", "dash.card.deliverables");
   const limit = deliverableLimit(s.size);
   body.append(el("p", { className: "big", textContent: String(s.deliverables) }));
   if (limit === null) {
-    body.append(
-      el("p", { className: "meta", textContent: `Not cut. ${DELIVERABLES_BANDS.L.min} or more is size L, with no upper limit.` }),
-    );
+    body.append(live("p", { className: "meta" }, () => t("dash.delivNote", { min: DELIVERABLES_BANDS.L.min })));
     return node;
   }
-  body.append(el("p", { className: "meta", textContent: `Not cut. Limit for ${s.size}: ${limit}.` }));
+  body.append(live("p", { className: "meta" }, () => t("dash.delivLimit", { size: s.size, limit })));
   const bar = el("div", { className: "segments" });
   bar.setAttribute("aria-hidden", "true");
   for (let i = 0; i < limit; i++) {
@@ -140,24 +164,24 @@ function deliverablesCard(s: ProjectStatus): HTMLElement {
   }
   body.append(bar);
   if (s.deliverables > limit) {
-    body.append(el("p", { className: "meta alert-text", textContent: `${s.deliverables - limit} over the limit.` }));
+    body.append(live("p", { className: "meta alert-text" }, () => t("dash.delivOver", { n: s.deliverables - limit })));
   }
   return node;
 }
 
-function alertCard(alert: ScopeAlert): HTMLElement {
+function alertCard(project: Project, alert: ScopeAlert): HTMLElement {
   if (!alert.alert) {
-    const { node, body } = card("card-scope", "Scope");
-    body.append(el("p", { className: "big-line", textContent: "Within limits" }));
+    const { node, body } = card("card-scope", "dash.card.scope");
+    body.append(translate(el("p", { className: "big-line" }), "dash.within"));
     return node;
   }
-  const { node, body } = card("card-scope", "Scope", ["card-alert"]);
-  body.append(el("p", { id: "scope-alert", className: "alert-text", role: "alert", textContent: alertMessage(alert) ?? "" }));
+  const { node, body } = card("card-scope", "dash.card.scope", ["card-alert"]);
+  body.append(live("p", { id: "scope-alert", className: "alert-text", role: "alert" }, () => alertMessage(alert, project) ?? ""));
   return node;
 }
 
 function phasesCard(project: Project): HTMLElement {
-  const { node, body } = card("card-phases", "Phases");
+  const { node, body } = card("card-phases", "dash.card.phases");
   const rows = phaseCounts(project).map((c) => {
     const total = c.done + c.open + c.cut;
     const bar = el("div", { className: "phase-bar" });
@@ -175,7 +199,7 @@ function phasesCard(project: Project): HTMLElement {
     return el("div", { className: "phase-row" }, [
       el("p", { className: "phase-name", textContent: c.name }),
       bar,
-      el("p", { className: "meta", textContent: `${c.done} done · ${c.open} open · ${c.cut} cut` }),
+      live("p", { className: "meta" }, () => t("dash.phaseMeta", { done: c.done, open: c.open, cut: c.cut })),
     ]);
   });
   body.append(el("div", { className: "phase-list" }, rows));
@@ -184,28 +208,28 @@ function phasesCard(project: Project): HTMLElement {
 
 function historyCard(s: ProjectStatus): HTMLElement {
   // Full width, so it never sits alone in a row of the grid.
-  const { node, body } = card("card-history", "Size history", ["card-wide"]);
+  const { node, body } = card("card-history", "dash.card.history", ["card-wide"]);
   if (s.historyRows.length === 0) {
-    body.append(el("p", { className: "hint", textContent: "No size changes yet." }));
+    body.append(translate(el("p", { className: "hint" }), "dash.noHistory"));
     return node;
   }
   // Newest first.
   const rows = [...s.historyRows].reverse().map((c) =>
     el("li", { className: "activity-item" }, [
       el("p", { className: "act-head" }, [
-        el("span", { className: "act-date", textContent: c.date }),
-        el("span", { className: "act-change", textContent: `${c.fromSize ?? "-"} → ${c.toSize}` }),
+        el("span", { className: "act-date ltr", textContent: ltr(c.date) }),
+        el("span", { className: "act-change ltr", textContent: `${c.fromSize ?? "-"} → ${c.toSize}` }),
       ]),
       el("p", { className: "act-line" }, [
-        el("span", { className: "k", textContent: "Reason" }),
+        translate(el("span", { className: "k" }), "dash.reason"),
         el("span", { className: "v", textContent: c.reason }),
       ]),
       el("p", { className: "act-line" }, [
-        el("span", { className: "k", textContent: "Items cut" }),
-        el("span", { className: "v", textContent: c.itemsCutLabels.length ? c.itemsCutLabels.join("; ") : "none" }),
+        translate(el("span", { className: "k" }), "dash.itemsCut"),
+        live("span", { className: "v" }, () => (c.itemsCutLabels.length ? c.itemsCutLabels.join(t("reasons.sep")) : t("dash.none"))),
       ]),
       el("p", { className: "act-line" }, [
-        el("span", { className: "k", textContent: "Approved by" }),
+        translate(el("span", { className: "k" }), "dash.approvedBy"),
         el("span", { className: "v", textContent: c.approvedBy ?? "-" }),
       ]),
     ]),
@@ -223,17 +247,17 @@ export function mountStatus(root: HTMLElement, project: Project, today: string):
   const s = status(project, today);
   const alert = scopeAlert(project);
   const header = el("header", { className: "dash-head" }, [
-    el("h2", { className: "dash-name", textContent: s.name }),
+    el("h2", { className: "dash-name", textContent: s.name, dir: "auto" }),
     el("p", { className: "pills" }, [
-      el("span", { className: "pill", textContent: `Size ${s.size}` }),
-      el("span", { className: "pill", textContent: TRACK_LABELS[s.track] }),
+      live("span", { className: "pill" }, () => t("dash.pill.size", { size: s.size })),
+      live("span", { className: "pill" }, () => trackName(s.track)),
     ]),
   ]);
   const grid = el("div", { className: "bento" }, [
     openItemsCard(project),
     sizeCard(s),
     deliverablesCard(s),
-    alertCard(alert),
+    alertCard(project, alert),
     phasesCard(project),
     historyCard(s),
   ]);

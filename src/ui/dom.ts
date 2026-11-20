@@ -1,3 +1,6 @@
+import { translate } from "./i18n";
+import type { MessageKey } from "./i18n/en";
+
 /** Small helpers for building DOM without innerHTML. */
 
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -11,10 +14,11 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-export function field(id: string, labelText: string, control: HTMLElement, hint?: string): HTMLElement {
-  const label = el("label", { htmlFor: id }, [labelText]);
+/** A labelled control. The label (and optional hint) are message keys, so they follow the language. */
+export function field(id: string, labelKey: MessageKey, control: HTMLElement, hintKey?: MessageKey): HTMLElement {
+  const label = translate(el("label", { htmlFor: id }), labelKey);
   const children: Array<Node | string> = [label, control];
-  if (hint) children.push(el("small", { className: "hint" }, [hint]));
+  if (hintKey) children.push(translate(el("small", { className: "hint" }), hintKey));
   return el("div", { className: "field" }, children);
 }
 
@@ -51,4 +55,41 @@ export function setChecked(root: ParentNode, name: string, value: string): void 
   for (const radio of Array.from(root.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`))) {
     radio.checked = radio.value === value;
   }
+}
+
+/**
+ * Steps for an arrow key inside a radio group: +1 next, -1 previous, 0 for other keys.
+ * Up and Down keep their order. Left and Right follow the screen: in Arabic (RTL) the first card is on the right.
+ */
+export function arrowStep(key: string, rtl: boolean): number {
+  switch (key) {
+    case "ArrowDown":
+      return 1;
+    case "ArrowUp":
+      return -1;
+    case "ArrowRight":
+      return rtl ? -1 : 1;
+    case "ArrowLeft":
+      return rtl ? 1 : -1;
+    default:
+      return 0;
+  }
+}
+
+/** Makes arrow keys move between the radios of a group (wrapping), and select the one reached. */
+export function wireArrowKeys(group: HTMLElement): void {
+  group.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== "radio") return;
+    const step = arrowStep(event.key, document.documentElement.dir === "rtl");
+    if (step === 0) return;
+    const radios = Array.from(group.querySelectorAll<HTMLInputElement>('input[type="radio"]:not(:disabled)'));
+    const index = radios.indexOf(target);
+    if (index < 0) return;
+    event.preventDefault();
+    const next = radios[(index + step + radios.length) % radios.length]!;
+    next.checked = true;
+    next.focus();
+    next.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 }

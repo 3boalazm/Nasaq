@@ -4,7 +4,7 @@ import { mountIntakeForm, readAnswers } from "./form";
 import type { SaveFn } from "./dom";
 import { fieldErrors, suggestFromIntake } from "../core/intake";
 import { phaseDefs } from "../core/templates";
-import { TRACK_LABELS } from "./labels";
+import { trackName } from "./labels";
 
 /** Chooses a selection card: check the radio and fire change, as a click does. */
 const pick = (name: string, value: string): void => {
@@ -133,7 +133,7 @@ describe("wizard: selection cards set the same values the old selects did", () =
       expect(radio.type).toBe("radio");
       expect(radio.name).toBe("f-track");
       const card = radio.closest("label")!;
-      expect(card.textContent).toContain(TRACK_LABELS[t]);
+      expect(card.textContent).toContain(trackName(t));
       expect(card.textContent).toContain(`${phaseDefs(t, "S").length} phases`);
     }
   });

@@ -103,13 +103,17 @@ export function suggestFromIntake(a: IntakeAnswers): IntakeSuggestion {
  */
 export function createProject(a: IntakeAnswers, size: Size, today: string = todayIso()): Project {
   const name = a.name.trim();
-  if (name === "") throw new ProjectYamlError("name is required");
+  if (name === "") throw new ProjectYamlError("name is required", "name-required");
   if (!(TRACKS as readonly string[]).includes(a.track)) {
-    throw new ProjectYamlError(`unknown track ${JSON.stringify(a.track)}`);
+    throw new ProjectYamlError(`unknown track ${JSON.stringify(a.track)}`, "track-unknown", { value: JSON.stringify(a.track) });
   }
   const track = a.track as Track;
-  if (!isRealIsoDate(a.startDate)) throw new ProjectYamlError("startDate must be a real date (YYYY-MM-DD)");
-  if (!isRealIsoDate(a.deadline)) throw new ProjectYamlError("deadline must be a real date (YYYY-MM-DD)");
+  if (!isRealIsoDate(a.startDate)) {
+    throw new ProjectYamlError("startDate must be a real date (YYYY-MM-DD)", "date-invalid", { field: "startDate" });
+  }
+  if (!isRealIsoDate(a.deadline)) {
+    throw new ProjectYamlError("deadline must be a real date (YYYY-MM-DD)", "date-invalid", { field: "deadline" });
+  }
 
   const phases: Phase[] = phaseDefs(track, size).map((def, i) => {
     const phaseId = `p${i + 1}`;
