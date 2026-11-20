@@ -9,7 +9,7 @@ phases:
       - "CI, staging, secrets handling, migration plan, rollback plan"
   - name: Build
     items:
-      - "Sprints per Implementation.md (source doc 26 was not available)"
+      - "Sprints of up to 5 milestones, one per session"
   - name: Verify
     items:
       - "Typecheck, existing tests, manual check"

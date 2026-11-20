@@ -117,7 +117,7 @@ describe("M3.5 scopeAlert", () => {
       { ...p, size: "M" },
       "S",
       "x",
-      null,
+      "Approver A",
       "2026-11-02",
       { cutItemIds: [p.phases[0]!.items[0]!.id], mustCutReason: "r" },
     );

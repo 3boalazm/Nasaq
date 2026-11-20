@@ -37,13 +37,13 @@ Evidence tags: VERIFIED, UNVERIFIED, ASSUMPTION, CLIENT-REPORTED.
 
 | Item | Decides | Planner | Builder |
 |---|---|---|---|
-| Name | AD and client | advises | produces options |
-| Logo | AD and client | advises | produces |
-| Palette | AD and client | advises | produces |
-| Type | AD and client | advises | produces |
+| Name | Art Director and client | advises | produces options |
+| Logo | Art Director and client | advises | produces |
+| Palette | Art Director and client | advises | produces |
+| Type | Art Director and client | advises | produces |
 | Other decisions | _to set_ | _to set_ | _to set_ |
 
-AD is the role that signs off brand decisions. Confirm the name of this role (see Open questions).
+The Art Director (the owner) signs off brand decisions.
 
 ## 3 Master phase registry (NEW)
 
@@ -90,7 +90,7 @@ Copy this block per phase:
 
 | # | Question | Owner | Status |
 |---|---|---|---|
-| 1 | What does AD stand for in this project, and who holds the role? | Planner | Planned |
+| 1 | _to fill_ | _to fill_ | Planned |
 | 2 | _to fill_ | _to fill_ | Planned |
 
 ## 7 Closing the project

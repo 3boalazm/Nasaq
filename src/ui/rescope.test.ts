@@ -65,6 +65,15 @@ describe("rescope UI", () => {
     expect(reason.hidden).toBe(false);
   });
 
+  it("download without an approver shows an error and does not save", async () => {
+    mountRescope(root, mixed("M"), { save, today: "2026-11-01", onRescoped });
+    setVal("rs-reason", "Client cut scope");
+    btn().click();
+    await vi.waitFor(() => expect(errors()).toMatch(/approved/));
+    expect(save).not.toHaveBeenCalled();
+    expect(onRescoped).not.toHaveBeenCalled();
+  });
+
   it("download with no reason shows an error and does not save", async () => {
     mountRescope(root, mixed("M"), { save, today: "2026-11-01", onRescoped });
     btn().click();
@@ -76,6 +85,7 @@ describe("rescope UI", () => {
   it("cutting a must without a typed reason is refused", async () => {
     mountRescope(root, mixed("M"), { save, today: "2026-11-01", onRescoped });
     setVal("rs-reason", "Client cut scope");
+    setVal("rs-approved", "Approver A");
     check("cut-a-must");
     btn().click();
     await vi.waitFor(() => expect(errors()).toMatch(/typed reason/));
@@ -99,11 +109,12 @@ describe("rescope UI", () => {
     expect(next.sizeHistory[next.sizeHistory.length - 1]).toMatchObject({ date: "2026-11-05", fromSize: "M", toSize: "S", approvedBy: "Approver A", itemsCut: ["b-nice"] });
   });
 
-  it("a move up needs no reason-of-cut and saves the new files ZIP name", async () => {
+  it("a move up needs no cut and saves the new files ZIP name", async () => {
     mountRescope(root, sampleProject("S"), { save, today: "2026-11-01", onRescoped });
     setVal("rs-size", "M");
     document.getElementById("rs-size")!.dispatchEvent(new Event("change"));
     setVal("rs-reason", "Scope grew");
+    setVal("rs-approved", "Approver A");
     btn().click();
     await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect((save.mock.calls[0] as [Blob, string])[1]).toBe("sample-project-rescope-M.zip");

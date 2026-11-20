@@ -61,6 +61,7 @@ describe("existing project UI (upload, status, rescope)", () => {
     await upload(toYaml(sampleProject("M")));
     await vi.waitFor(() => expect(document.getElementById("rs-reason")).not.toBeNull());
     (document.getElementById("rs-reason") as HTMLInputElement).value = "Client cut scope";
+    (document.getElementById("rs-approved") as HTMLInputElement).value = "Approver A";
     (document.getElementById("rs-date") as HTMLInputElement).value = "2026-11-05";
     (document.getElementById("rs-size") as HTMLSelectElement).value = "S";
     (document.getElementById("rs-download") as HTMLButtonElement).click();

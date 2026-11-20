@@ -37,7 +37,7 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
     SIZES.filter((s) => s !== project.size).map((s) => el("option", { value: s, textContent: s })),
   );
   const reasonInput = el("input", { id: "rs-reason", type: "text" });
-  const approvedInput = el("input", { id: "rs-approved", type: "text" });
+  const approvedInput = el("input", { id: "rs-approved", type: "text", required: true });
   const dateInput = el("input", { id: "rs-date", type: "date", value: today });
 
   const mustWarning = el("p", {
@@ -99,7 +99,7 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
     const down = directionOf(project.size, newSize) === "down";
     const cutIds = down ? cutCheckboxes.filter((b) => b.checked).map((b) => b.value) : [];
     try {
-      const next = rescope(project, newSize, reasonInput.value, approvedInput.value || null, dateInput.value, {
+      const next = rescope(project, newSize, reasonInput.value, approvedInput.value, dateInput.value, {
         cutItemIds: cutIds,
         mustCutReason: mustReason.value,
       });
@@ -116,7 +116,7 @@ export function mountRescope(root: HTMLElement, project: Project, opts: RescopeO
     el("p", { className: "hint", textContent: `Current size: ${project.size}. Choose the new size and a reason. A change record is written to the ZIP's RESCOPE_NOTE.md and to project.yml.` }),
     field("rs-size", "New size", sizeSel),
     field("rs-reason", "Reason (required)", reasonInput),
-    field("rs-approved", "Approved by (optional)", approvedInput),
+    field("rs-approved", "Approved by (required)", approvedInput),
     field("rs-date", "Date of change", dateInput),
     cutSection,
     errorsEl,

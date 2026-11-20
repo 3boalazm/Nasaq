@@ -14,9 +14,9 @@ Made by Nasaq for a size change. Keep it with project.yml.
 | Items cut | {{itemsCut}} |
 | Items added | {{itemsAdded}} |
 
-## New files in this ZIP
+## Files in this ZIP
 
-{{newFiles}}
+{{fileList}}
 
 ## What to do with your files
 

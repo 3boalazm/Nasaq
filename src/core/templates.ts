@@ -25,7 +25,7 @@ export const ENTRY_TEMPLATE: string = rawTemplate("_shared/entry.md");
 
 /** Rescope note template and the per-direction instruction snippets (spec section 6). */
 export const RESCOPE_NOTE_TEMPLATE: string = rawTemplate("_shared/RESCOPE_NOTE.md");
-export function rescopeSnippet(name: "down-L-M" | "down-M-S" | "up"): string {
+export function rescopeSnippet(name: "down-L-M" | "down-L-S" | "down-M-S" | "up"): string {
   return rawTemplate(`_shared/rescope/${name}.md`);
 }
 
