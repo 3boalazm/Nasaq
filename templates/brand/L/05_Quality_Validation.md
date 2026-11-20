@@ -1,4 +1,4 @@
-# {{name}} — application tests (size L)
+# {{name}} — 05 Quality and validation (size L)
 
 **Planner** defines the suites and the applications in scope. **Builder** runs them and records proof. A test is never removed to make a run pass.
 
@@ -19,13 +19,18 @@ Evidence tags: VERIFIED, CLIENT-REPORTED, UNVERIFIED, ASSUMPTION.
 
 Every result states the proof id or the URL, the size or width, the language, the medium, and what was seen. A result without evidence is recorded as not run, with the reason.
 
-## 2 Applications in scope
+## 2 Validation areas
 
-Chosen from the catalogue in Brand_Playbook.md section 5, before Identity core starts. The Planner may not start that phase while this table is empty.
+| Area | What it covers | Suites and checks |
+|---|---|---|
+| Visual QA | Marks, colour, layout, consistency | LOG, CLR, LAY, STA |
+| Accessibility | Contrast, legibility, small sizes | CLR-02, DIG-01, SIG-01 |
+| Language | Arabic reading, AR/EN parity, numerals, direction | TYP-02, LOG-02, LAY-02 |
+| Legal | Licences, screening, AI assets | TYP-01, DIG-02, BR-BASE-01 to 03 in 00_Risk_Register.md |
+| Print | Proofs, stock, colour match | CLR-01, STA-01, LAY-01 |
 
-| ID | Application | Group | Size or format | Viewing distance or screen width | Language | Type | Proof id |
-|---|---|---|---|---|---|---|---|
-| APP-01 | _to fill_ | _to fill_ | _to fill_ | _to fill_ | AR / EN / both | _to fill_ | _to fill_ |
+The applications under test are the rows of 04_Design_System.md section 5 (APP-nn).
+
 
 ## 3 Test matrix
 
@@ -53,8 +58,8 @@ Chosen from the catalogue in Brand_Playbook.md section 5, before Identity core s
 | AT-BASE-LAY-01 | Layout checked at smallest and largest format | PROOF | Grid, clear space and minimum sizes hold on both | not run | — |
 | AT-BASE-LAY-02 | Numerals and mixed-direction policy applied | BENCH | No broken order in mixed AR/EN lines in any sample | not run | — |
 | AT-BASE-STA-01 | Stationery set printed and checked | PROOF | Printed on the final stock; trim, colour and small text checked | not run | — |
-| AT-BASE-STA-02 | Master file set complete and versioned | BENCH | Every row of Playbook 6.1 present, named per 6.3 | not run | — |
-| AT-BASE-SIG-01 | Legible at viewing distance | FIELD | Read at the distance in section 2. Rule of thumb to confirm on site: 25 mm letter height per 3 m | not run | — |
+| AT-BASE-STA-02 | Master file set complete and versioned | BENCH | Every format in 06_Delivery_Lifecycle.md present and named per its rule | not run | — |
+| AT-BASE-SIG-01 | Legible at viewing distance | FIELD | Read at the distance stated for the application. Rule of thumb to confirm on site: 25 mm letter height per 3 m | not run | — |
 | AT-BASE-SIG-02 | Scale checked on site | FIELD | Full-size print or photo mock-up seen in place | not run | — |
 | AT-BASE-DIG-01 | Digital sizes and screen contrast | DIGITAL | Clear at 16 px favicon and avatar size; checked at 320 and 1280 px, RTL and LTR | not run | — |
 | AT-BASE-DIG-02 | Asset licences recorded, files named per standard | BENCH | Asset register has no empty licence cell | not run | — |
@@ -65,7 +70,7 @@ Chosen from the catalogue in Brand_Playbook.md section 5, before Identity core s
 
 ```
 ### <SUITE>-<n> <title>
-- Application: <id from section 2>
+- Application: <APP id from module 04>
 - Type: BENCH | PROOF | FIELD | DIGITAL | USER
 - Tier: A | B
 - Linked: <risk id>, <milestone id>
@@ -79,3 +84,8 @@ Chosen from the catalogue in Brand_Playbook.md section 5, before Identity core s
 
 | Date | Case | Result | Proof id |
 |---|---|---|---|
+
+## 7 Proof list
+
+| Proof id | Medium | Size | Language | What was checked | Result |
+|---|---|---|---|---|---|

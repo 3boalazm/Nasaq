@@ -1,6 +1,6 @@
 # {{name}}
 
-This folder was set up by Nasaq. Size: {{size}}. Read {{readFirst}} for the brief, phases, checklists and handoff.
+This folder was set up by Nasaq. Size: {{size}}. Read {{readFirst}} for the brief, phases, checklists and handoff.{{readNote}}
 
 ## Always-on rules
 

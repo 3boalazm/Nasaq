@@ -16,15 +16,42 @@ const SIZE_FILES: Record<Size, readonly string[]> = {
 
 const L_FILES: Record<Track, readonly string[]> = {
   dev: ["Implementation.md", "Security_issues.md", "Test_scenarios.md", "Handoff.md"],
-  brand: ["Brand_Roadmap.md", "Brand_Risks.md", "Application_Tests.md", "Handoff.md", "Brand_Playbook.md"],
+  // Brand L is six modules (01 to 06) under a governing layer (00_ files and Handoff.md).
+  brand: [
+    "00_Governance.md",
+    "00_AI_Orchestration.md",
+    "00_Risk_Register.md",
+    "Handoff.md",
+    "01_Project_Intelligence.md",
+    "02_Brand_Strategy.md",
+    "03_Creative_Development.md",
+    "04_Design_System.md",
+    "05_Quality_Validation.md",
+    "06_Delivery_Lifecycle.md",
+  ],
   uiux: ["UX_Roadmap.md", "UX_Risks.md", "UX_Tests.md", "Handoff.md"],
 };
 
-/** Names of the four role files of size L, for a track. Brand adds Brand_Playbook.md after them. */
-export function roleFiles(track: Track): { roadmap: string; risk: string; test: string; handoff: string } {
-  const [roadmap, risk, test, handoff] = L_FILES[track];
-  return { roadmap: roadmap!, risk: risk!, test: test!, handoff: handoff! };
+interface RoleFiles {
+  roadmap: string;
+  risk: string;
+  test: string;
+  handoff: string;
 }
+
+const ROLE_FILES: Record<Track, RoleFiles> = {
+  dev: { roadmap: "Implementation.md", risk: "Security_issues.md", test: "Test_scenarios.md", handoff: "Handoff.md" },
+  brand: { roadmap: "00_Governance.md", risk: "00_Risk_Register.md", test: "05_Quality_Validation.md", handoff: "Handoff.md" },
+  uiux: { roadmap: "UX_Roadmap.md", risk: "UX_Risks.md", test: "UX_Tests.md", handoff: "Handoff.md" },
+};
+
+/** Names of the size L files by role, for a track. */
+export function roleFiles(track: Track): RoleFiles {
+  return ROLE_FILES[track];
+}
+
+/** Brand L files that are read in every session; the numbered modules are opened one phase at a time. */
+export const BRAND_L_GOVERNING: readonly string[] = ["00_Governance.md", "00_AI_Orchestration.md", "00_Risk_Register.md", "Handoff.md"];
 
 /**
  * Returns the files to generate for a track and size, in a stable order:
